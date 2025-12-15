@@ -1,4 +1,5 @@
 use crate::{
+    console, 
     arch::arm64::memory::{mmu::setup_kern_addr_space, 
                           fixmap::FIXMAPS},
     arch::arm64::ExceptionState,
@@ -27,8 +28,9 @@ use aarch64_cpu::{
 use core::arch::global_asm;
 use logical_map::setup_logical_map;
 use memory::{setup_allocator, setup_stack_and_heap};
-//use secondary::{boot_secondaries, cpu_count, save_idmap, secondary_booted};
+use secondary::{boot_secondaries, cpu_count, save_idmap, secondary_booted};
 
+mod secondary;
 mod exception_level;
 mod logical_map;
 mod memory;
@@ -57,7 +59,7 @@ unsafe extern "C" {fn print(s:u64, len:u64);}
 ///
 /// Returns the stack pointer in X0, which should be hen set by the boot asm.
 
-pub fn console(s:&str) {
+pub fn console_output(s:&str) {
     unsafe {
         print(s.as_ptr() as u64, s.len() as u64);
     };    
@@ -72,18 +74,16 @@ fn arch_init_stage1(
 ) -> VA {
 
     (|| -> Result<VA, KernelError> {
-        console("secondardy\n");
-        
-//        setup_console_logger();
+        console!("secondardy\n");
         setup_allocator(dtb_ptr, image_start, image_end)?;
-        console("C\n");        
+        console!("C\n");        
         let dtb_addr = {
             let mut fixmaps = FIXMAPS.lock_save_irq();
             fixmaps.setup_fixmaps(highmem_pgtable_base);
 
             unsafe { fixmaps.remap_fdt(dtb_ptr) }.unwrap()
         };
-        console("C\n");
+        console!("C\n");
 
         set_fdt_va(dtb_addr.cast());
         setup_logical_map(highmem_pgtable_base)?;
@@ -135,8 +135,7 @@ fn arch_init_stage2(frame: *mut ExceptionState) -> *mut ExceptionState {
         frame,
     );
 
-    
-//    boot_secondaries();
+    boot_secondaries();
 
     // Prove that we can send IPIs through the messenger.
     let _ = message_cpu(1, Message::Ping(ArchImpl::id() as _));

@@ -34,7 +34,7 @@ macro_rules! ksym_pa {
 #[macro_export]
 macro_rules! kfunc_pa {
     ($sym:expr) => {{
-        let v = libkernel::memory::address::VA::from_value($sym as usize);
+        let v = crate::memory::address::VA::from_value($sym as usize);
         $crate::arch::arm64::memory::translate_kernel_va(v)
     }};
 }

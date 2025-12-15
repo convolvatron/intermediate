@@ -1,0 +1,27 @@
+enum Operation  {
+    copy = 1,
+    resolve = 2,
+//    open = 3,
+}
+
+enum Address {
+    Virtual,
+    Object,
+    Instance,
+    BitRange,
+    Locale,
+}
+
+enum Value {
+    Address,
+    String,
+    Unsigned,
+    Signed,
+}
+
+fn new_object() {
+}
+
+    
+
+

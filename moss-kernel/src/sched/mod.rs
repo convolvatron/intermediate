@@ -2,7 +2,7 @@ use crate::{
     KernelError,
     arch::{Arch, ArchImpl},
     per_cpu,
-    process::{TASK_LIST, Task, TaskDescriptor, TaskState},
+    task::{TASK_LIST, Task, TaskDescriptor, TaskState},
     UserAddressSpace,    
     OnceLock,
 };
@@ -44,7 +44,7 @@ fn schedule() {
     }
 
     let previous_task = current_task();
-    *previous_task.last_run.lock_save_irq() = now();
+//    *previous_task.last_run.lock_save_irq() = now();
     let mut sched_state = SCHED_STATE.borrow_mut();
     let next_task = sched_state.find_next_runnable_task();
 
@@ -88,7 +88,7 @@ impl SchedState {
         previous_task: Option<Arc<Task>>,
         next_task: Arc<Task>,
     ) -> Result<(), KernelError> {
-        let now_inst = now().expect("System timer not initialised");
+        let now_inst = 1; //now().expect("System timer not initialised");
 
         if let Some(ref prev_task) = previous_task
             && Arc::ptr_eq(&next_task, prev_task)
@@ -104,8 +104,6 @@ impl SchedState {
             }
             *prev_task.exec_start.lock_save_irq() = None;
         }
-
-        // Record the start time for the task we are about to run.
         *next_task.exec_start.lock_save_irq() = Some(now_inst);
 
         // Context switch.
@@ -118,11 +116,7 @@ impl SchedState {
         }
 
         *next_task.state.lock_save_irq() = TaskState::Running;
-
-        // Update the scheduler's state to reflect the new running task.
         self.running_task = Some(next_task.clone());
-
-        // Perform the architecture-specific context switch.
         ArchImpl::context_switch(next_task);
 
         Ok(())

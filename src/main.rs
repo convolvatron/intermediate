@@ -6,20 +6,7 @@ use std::collections::BTreeMap;
 use std::alloc::{alloc, Layout};
 use xhypervisor::*;
 
-// ?
 const PAGESIZE:usize = 65536;
-
-/*
-	let capacity: usize = 8 * 0x10000;
-	let layout: Layout = Layout::from_size_align(capacity, 4096).unwrap();
-	let mem_raw = alloc(layout);
-
-	println!("allocating memory at {:?}", mem_raw);
-	//copy kernel to the VM memory
-	let mem = slice::from_raw_parts_mut(mem_raw, capacity);
-	mem[EL1_USER_PAYLOAD_ADDRESS as usize..EL1_USER_PAYLOAD_ADDRESS as usize + sz]
-	    .clone_from_slice(&el1_user_payload);
- */
 
 fn pad(x:usize, by:usize) -> usize {
     (((x-1)/by)+1)*by
@@ -31,7 +18,6 @@ fn aligned_mem(size:usize) -> Result<&'static mut [u8], std::io::Error>
     let ptr = unsafe {
         let ptr = alloc(Layout::from_size_align(rlen, PAGESIZE)
                         .map_err(|e|std::io::Error::other(e))?);
-        println!("aligned {:x}", ptr as u64);
         if ptr.is_null() {
             return Err(std::io::Error::other("allocate"))
         }
@@ -72,7 +58,6 @@ impl VM {
     
     fn map(&mut self, source:*const u8, target:u64, length:usize, perm:xhypervisor::MemPerm) -> Result<(), std::io::Error>{
         self.regions.insert(target, (source as u64, length));
-        println!("map! {:x} {:x} {:x}", source as u64, target, length);
         unsafe {
             let s = slice::from_raw_parts(source, pad(length, PAGESIZE));
             // error?
@@ -118,27 +103,18 @@ fn vm_create() {
 	match reason {
 	    VirtualCpuExitReason::Exception { exception } => {
 		let ec = (exception.syndrome >> 26) & 0x3f;
-                println!("address: {:x} {:x}", exception.virtual_address, exception.physical_address);                 
+
 		if ec == 0x16 {
-		    println!(
-			"HVC executed! x0 is {:x} {:x} {:x} {:x} {:x}",
-                        exception.syndrome,
-			vcpu.read_register(Register::X0).unwrap(),
-			vcpu.read_register(Register::X1).unwrap(),
-			vcpu.read_register(Register::X2).unwrap(),
-			vcpu.read_system_register(SystemRegister::SP_EL1).unwrap()                                                                                    
-		    );
                     unsafe {
                         let n = vm.guest_to_host(vcpu.read_register(Register::X0).unwrap()).expect("translate");
-                        println!("host: {:x}", n);
                         let s = slice::from_raw_parts(n as *const u8, vcpu.read_register(Register::X1).unwrap() as usize);
-                        println!("{:x}", vcpu.read_register(Register::X0).unwrap());
                         println!("{}", str::from_utf8(s).expect("Invalid UTF-8"));
                     }
                     continue;
 //		    break;
 		} else {
-		    println!("Unknown exception class 0x{:x}", ec);
+                    println!("address: {:x} {:x}", exception.virtual_address, exception.physical_address);
+     		    println!("Unknown exception class 0x{:x}", ec);
 		    break;
 		}
 	    }

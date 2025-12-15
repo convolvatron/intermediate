@@ -1,19 +1,18 @@
-use crate::arch::arm64::boot::console;
-use crate::arch::arm64::memory::{
-    HEAP_ALLOCATOR,
-    mmu::{page_mapper::PageOffsetPgTableMapper, smalloc_page_allocator::SmallocPageAlloc},
-    set_kimage_start,
-    tlb::AllEl1TlbInvalidator,
-};
-use crate::memory::INITIAL_ALLOCATOR;
+
 use core::ptr::NonNull;
 use crate::{
+    console,
     arch::arm64::memory::{
+        HEAP_ALLOCATOR,
+        mmu::{page_mapper::PageOffsetPgTableMapper, smalloc_page_allocator::SmallocPageAlloc},
+        set_kimage_start,
+        tlb::AllEl1TlbInvalidator,            
         pg_descriptors::MemoryType,
         pg_tables::{L0Table, MapAttributes, MappingContext, PgTableArray, map_range},
     },
     KernelError,
     memory::{
+        INITIAL_ALLOCATOR,
         PAGE_SIZE,
         address::{PA, TPA, VA},
         permissions::PtePermissions,
@@ -28,13 +27,13 @@ pub const KERNEL_STACK_PG_ORDER: usize = (KERNEL_STACK_SZ / PAGE_SIZE).ilog2() a
 const KERNEL_HEAP_SZ: usize = 64 * 1024 * 1024; // 64 MiB
 
 pub fn setup_allocator(dtb_ptr: TPA<u8>, image_start: PA, image_end: PA) -> Result<(), KernelError> {
-    console("A\n");
+    console!("A\n");
     let dt = unsafe { fdt_parser::Fdt::from_ptr(NonNull::new_unchecked(dtb_ptr.as_ptr_mut())) }
         .map_err(|_| KernelError::InvalidValue)?;
 
     let mut alloc = INITIAL_ALLOCATOR.lock_save_irq();
     let alloc = alloc.as_mut().unwrap();
-    console("B\n");
+    console!("B\n");
     dt.memory().try_for_each(|mem| -> Result<(), KernelError> {
         mem.regions().try_for_each(|region| -> Result<(), KernelError> {
             let start_addr = PA::from_value(region.address.addr());

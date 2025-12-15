@@ -227,33 +227,3 @@ pub trait VirtualMemory: CpuOps + Sized {
     /// Obtain a reference to the kernel's address space.
     fn kern_address_space() -> &'static SpinLockIrq<Self::KernelAddressSpace, Self>;
 }
-
-#[cfg(test)]
-pub mod test {
-    use core::hint::spin_loop;
-
-    use crate::CpuOps;
-
-    // A CPU mock object that can be used in unit-tests.
-    pub struct MockCpuOps {}
-
-    impl CpuOps for MockCpuOps {
-        fn id() -> usize {
-            0
-        }
-
-        fn halt() -> ! {
-            loop {
-                spin_loop();
-            }
-        }
-
-        fn disable_interrupts() -> usize {
-            0
-        }
-
-        fn restore_interrupt_state(_flags: usize) {}
-
-        fn enable_interrupts() {}
-    }
-}

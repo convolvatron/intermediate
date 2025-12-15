@@ -1,8 +1,8 @@
 //! A module for sending messages between CPUs, utilising IPIs.
 
 use crate::{
+    console,
     arch::ArchImpl,
-    kernel::kpipe::KBuf,
     OnceLock,
     SpinLock,
     CpuOps,

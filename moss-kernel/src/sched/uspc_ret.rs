@@ -1,13 +1,12 @@
 use crate::{
+    SigId,
     sched::SCHED_STATE, current_task, waker::create_waker, sched::schedule,
     arch::{Arch, ArchImpl},
-    process::{
-        TaskState,
-        ctx::UserCtx,
-        exit::kernel_exit_with_signal,
-        thread_group::signal::{SigId, ksigaction::KSignalAction},
-    },
+    task::TaskState,
+    ctx::UserCtx,
+    //exit::kernel_exit_with_signal,
 };
+
 use alloc::boxed::Box;
 use core::{ptr, task::Poll};
 

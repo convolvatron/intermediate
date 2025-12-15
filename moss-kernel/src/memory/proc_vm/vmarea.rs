@@ -11,8 +11,8 @@
 //!   the process stack, heap, and BSS sections.
 use core::cmp;
 
+use syscall::Oid;
 use crate::{
-    fs::Inode,
     memory::{PAGE_MASK, PAGE_SIZE, address::VA, region::VirtMemoryRegion},
 };
 use alloc::sync::Arc;
@@ -97,7 +97,7 @@ pub struct VMAFileRead {
     /// The number of bytes to read from the file and write to the page.
     pub read_len: usize,
     /// The file that backs this VMA mapping.
-    pub inode: Arc<dyn Inode>,
+    pub inode: Oid,
 }
 
 /// Represents a mapping to a region of a file that backs a `VMArea`.
@@ -107,7 +107,7 @@ pub struct VMAFileRead {
 /// sections of an ELF binary).
 #[derive(Clone)]
 pub struct VMFileMapping {
-    pub(super) file: Arc<dyn Inode>,
+    pub(super) file: Oid,
     pub(super) offset: u64,
     pub(super) len: u64,
 }
@@ -120,8 +120,8 @@ impl PartialEq for VMFileMapping {
 
 impl VMFileMapping {
     /// Returns a clone of the reference-counted `Inode` for this mapping.
-    pub fn file(&self) -> Arc<dyn Inode> {
-        self.file.clone()
+    pub fn file(&self) -> Oid {
+        self.oid.clone()
     }
 
     /// Returns the starting offset of the mapping's data within the file.
@@ -159,7 +159,7 @@ impl VMAreaKind {
         Self::Anon
     }
 
-    pub fn new_file(file: Arc<dyn Inode>, offset: u64, len: u64) -> Self {
+    pub fn new_file(file: Oid, offset: u64, len: u64) -> Self {
         Self::File(VMFileMapping { file, offset, len })
     }
 }
@@ -206,7 +206,7 @@ impl VMArea {
     /// * `hdr`: The ELF program header (`LOAD` segment) to create the VMA from.
     /// * `endian`: The endianness of the ELF file, for correctly parsing header fields.
     pub fn from_pheader<E: Endian>(
-        f: Arc<dyn Inode>,
+        f: Oid,
         hdr: ProgramHeader64<E>,
         endian: E,
     ) -> VMArea {

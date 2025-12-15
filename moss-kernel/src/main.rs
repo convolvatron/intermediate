@@ -6,28 +6,44 @@
 extern crate alloc;
 
 mod arch;
-mod inode;
 pub mod general;
-mod timespec;
+//mod timespec;
 mod interrupts;
-mod kernel;
 mod memory;
-mod process;
 mod sched;
 mod sync;
 mod error;
-mod proc;
-mod fs;
+mod linux;
+mod task;
+mod ctx;
 
 pub use general::*;
 pub use sync::*;
 pub use memory::*;
 pub use error::*;
-pub use fs::*;
+pub use linux::*;
 pub use sched::*;
+pub use ctx::*;
 
-use crate::process::ctx::UserCtx;
 use crate::uspc_ret::dispatch_userspace_task;
+
+
+
+/// Represents a fixed point in monotonic time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Instant {
+    ticks: u64,
+    freq: u64,
+}
+
+#[macro_use]
+macro_rules! console {
+    ($($msg:tt)*) => {
+        crate::arch::arm64::boot::console_output(format_args!($($msg)*).as_str().unwrap())
+    }
+}
+
+pub(crate) use console;    
 
 async fn launch_init() {
 //    let dt = get_fdt();
@@ -46,6 +62,11 @@ async fn launch_init() {
 //        .expect("Could not launch init process");
 }
 
+// find a better home
+/// Returns the current instant, if the system timer has been initialised.
+pub fn now() -> Instant {
+    SYS_TIMER.get().map(|timer| timer.driver.now())
+}
 
 pub fn kmain(ctx_frame: *mut UserCtx) {
     sched_init();

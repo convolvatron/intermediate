@@ -8,12 +8,9 @@
 //! The rest of the kernel should use the `ArchImpl` type alias to access
 //! architecture-specific functions and types.
 
-use crate::process::{
-    Task,
-    thread_group::signal::{SigId, ksigaction::UserspaceSigAction},
-};
 use alloc::sync::Arc;
 use crate::{
+    task::Task,
     KernelError,
     CpuOps, VirtualMemory,
     memory::address::{UA, VA},
@@ -32,24 +29,13 @@ pub trait Arch: CpuOps + VirtualMemory {
     /// execution at the specified `entry_point`.
     fn new_user_context(entry_point: VA, stack_top: VA) -> Self::UserContext;
 
+    // scheduled for demolition
     /// Switch the current CPU's context to `new`, setting `new` to be the next
     /// task to be executed.
     fn context_switch(new: Arc<Task>);
 
-    /// Construct a new idle task.
-    fn create_idle_task() -> Task;
-
     /// Powers off the machine. Implementations must never return.
     fn power_off() -> !;
-
-    /// Call a user-specified signal handler in the current process.
-    fn do_signal(
-        sig: SigId,
-        action: UserspaceSigAction,
-    ) -> impl Future<Output = Result<<Self as Arch>::UserContext, KernelError>>;
-
-    /// Return from a userspace signal handler.
-    fn do_signal_return() -> impl Future<Output = Result<<Self as Arch>::UserContext, KernelError>>;
 
     /// Copies a block of memory from userspace to the kernel.
     ///

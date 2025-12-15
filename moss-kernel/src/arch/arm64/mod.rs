@@ -13,25 +13,20 @@ use memory::{
 };
 
 use crate::{
+    arch::Arch,
     KernelError,
     CpuOps, VirtualMemory,
     arch::arm64::memory::pg_tables::{L0Table, PgTableArray},
     memory::address::{UA, VA},
-    process::{
-        Task,
-        thread_group::signal::{SigId, ksigaction::UserspaceSigAction},
-    },
+//    linux::Task,
     SpinLock,
 };
-
-use super::Arch;
 
 pub mod boot;
 mod cpu_ops;
 mod exceptions;
 mod fdt;
 mod memory;
-mod signal;
 
 pub struct Aarch64 {}
 impl CpuOps for Aarch64 {
@@ -87,20 +82,9 @@ impl Arch for Aarch64 {
         "aarch64"
     }
 
-    fn do_signal(
-        sig: SigId,
-        action: UserspaceSigAction,
-    ) -> impl Future<Output = Result<<Self as Arch>::UserContext, KernelError>> {
-        signal::do_signal(sig, action)
-    }
-
-    fn do_signal_return() -> impl Future<Output = Result<<Self as Arch>::UserContext, KernelError>> {
-        signal::do_signal_return()
-    }
-
-    fn context_switch(new: Arc<Task>) {
-        context_switch(new);
-    }
+//    fn context_switch(new: Arc<Task
+//        proc::context_switch(new);
+//    }
 
     fn power_off() -> ! {
         // Fallback: halt the CPU indefinitely.

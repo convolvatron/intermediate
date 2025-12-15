@@ -1,4 +1,4 @@
-use crate::process::{TASK_LIST, TaskDescriptor, TaskState};
+use crate::task::{TASK_LIST, TaskDescriptor, TaskState};
 use core::task::{RawWaker, RawWakerVTable, Waker};
 
 unsafe fn clone_waker(data: *const ()) -> RawWaker {

@@ -1,4 +1,11 @@
 use crate::{
+    CpuOps, KernAddressSpace, VirtualMemory,
+    now,
+    KernelError,
+    memory::{
+        address::{PA, VA},
+        permissions::PtePermissions,
+    },    
     arch::{
         ArchImpl,
         arm64::{
@@ -18,14 +25,6 @@ use core::{
     mem::MaybeUninit,
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
-};
-use libkernel::{
-    CpuOps, KernAddressSpace, VirtualMemory,
-    error::{KernelError, Result},
-    memory::{
-        address::{PA, VA},
-        permissions::PtePermissions,
-    },
 };
 use log::{info, warn};
 
@@ -135,7 +134,6 @@ fn do_boot_secondary(cpu_node: fdt_parser::Node<'static>) -> Result<()> {
     Ok(())
 }
 
-/*
 fn cpu_node_iter() -> impl Iterator<Item = fdt_parser::Node<'static>> {
     let fdt = get_fdt();
 
@@ -157,14 +155,14 @@ pub fn boot_secondaries() {
 pub fn cpu_count() -> usize {
     cpu_node_iter().count()
 }
- */
+
 
 pub fn save_idmap(addr: PA) {
     if IDMAP_ADDR.set(addr).is_err() {
         warn!("Attempted to set ID map multiple times");
     }
 }
-/*
+
 pub fn secondary_booted() {
     let id = ArchImpl::id();
 
@@ -172,6 +170,6 @@ pub fn secondary_booted() {
 
     SECONDARY_BOOT_FLAG.store(true, Ordering::Release);
 }
-*/
+
 static IDMAP_ADDR: OnceLock<PA> = OnceLock::new();
 static SECONDARY_BOOT_FLAG: AtomicBool = AtomicBool::new(false);
