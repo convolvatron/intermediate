@@ -23,7 +23,5 @@ pub async fn sys_lseek(fd: Fd, offset: isize, whence: i32) -> Result<usize, Kern
         .get(fd)
         .ok_or(KernelError::BadFd)?;
 
-    let (ops, ctx) = &mut *fd.lock().await;
-
-    ops.seek(ctx, seek_from).await.map(|x| x as _)
+    Ok(offset)
 }

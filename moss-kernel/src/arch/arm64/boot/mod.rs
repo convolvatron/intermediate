@@ -28,7 +28,7 @@ use aarch64_cpu::{
 use core::arch::global_asm;
 use logical_map::setup_logical_map;
 use memory::{setup_allocator, setup_stack_and_heap};
-use secondary::{boot_secondaries, cpu_count, save_idmap, secondary_booted};
+use secondary::{boot_secondaries, cpu_count,};
 
 mod secondary;
 mod exception_level;

@@ -22,7 +22,7 @@ pub enum Message {
 }
 
 struct CpuMessenger {
-    mailboxes: SpinLock<Vec<KBuf<Message>>>,
+//    mailboxes: SpinLock<Vec<KBuf<Message>>>,
     _irq: ClaimedInterrupt,
 }
 

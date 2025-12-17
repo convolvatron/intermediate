@@ -1,9 +1,9 @@
 use crate::{
     KernelError,
-    fs::{FileType, attr::FileAttr, path::Path},
+    linux::{FileType, attr::FileAttr, path::Path},
     memory::address::TUA,
     memory::uaccess::{UserCopyable, cstr::UserCStr},
-    process::fd_table::Fd,
+    linux::Fd,
 };
 use core::ffi::c_char;
 

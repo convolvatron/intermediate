@@ -5,12 +5,15 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use bitflags::bitflags;
-//use ksigaction::{KSignalAction, UserspaceSigAction};
-use crate::memory::{address::UA, region::UserMemoryRegion};
 use ringbuf::Arc;
 
-use crate::{memory::uaccess::UserCopyable, SpinLock};
+use bitflags::bitflags;
+use crate::{
+    memory::{address::UA, region::UserMemoryRegion},
+    linux::{KSignalAction,UserspaceSigAction},
+    memory::uaccess::UserCopyable,
+    SpinLock,
+    KernelError};
 
 bitflags! {
     #[repr(C)]
@@ -276,5 +279,30 @@ impl SignalState {
                 }
             }
         }
+    }
+}
+
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct UserSigId(u32);
+
+impl TryFrom<UserSigId> for SigId {
+    type Error = KernelError;
+
+    fn try_from(value: UserSigId) -> core::result::Result<Self, Self::Error> {
+        if value.0 < 1 || value.0 > 31 {
+            Err(KernelError::InvalidValue)
+        } else {
+            // SAFETY: The above bounds check ensure that the value is within
+            // range.
+            Ok(unsafe { transmute::<u32, SigId>(value.0 - 1) })
+        }
+    }
+}
+
+impl From<u64> for UserSigId {
+    fn from(value: u64) -> Self {
+        Self(value as _)
     }
 }

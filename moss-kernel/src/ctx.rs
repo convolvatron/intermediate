@@ -1,3 +1,4 @@
+use crate::KernelError;
 use crate::arch::{Arch, ArchImpl};
 use alloc::boxed::Box;
 use core::{pin::Pin, ptr};

@@ -15,7 +15,6 @@ use syscall::Oid;
 use crate::{
     memory::{PAGE_MASK, PAGE_SIZE, address::VA, region::VirtMemoryRegion},
 };
-use alloc::sync::Arc;
 use object::{
     Endian,
     elf::{PF_R, PF_W, PF_X, ProgramHeader64},
@@ -114,14 +113,14 @@ pub struct VMFileMapping {
 
 impl PartialEq for VMFileMapping {
     fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.file, &other.file) && self.offset == other.offset && self.len == other.len
+        self.file == other.file && self.offset == other.offset && self.len == other.len
     }
 }
 
 impl VMFileMapping {
     /// Returns a clone of the reference-counted `Inode` for this mapping.
     pub fn file(&self) -> Oid {
-        self.oid.clone()
+        self.file.clone()
     }
 
     /// Returns the starting offset of the mapping's data within the file.
@@ -382,7 +381,7 @@ impl VMArea {
 
             (VMAreaKind::File(self_map), VMAreaKind::File(other_map)) => {
                 // Check that they point to the same inode.
-                let same_file = Arc::ptr_eq(&self_map.file, &other_map.file);
+                let same_file = self_map.file == other_map.file;
 
                 // Check that the file offsets are contiguous. `other` VMA's
                 // offset must be `self`'s offset + `self`'s size.

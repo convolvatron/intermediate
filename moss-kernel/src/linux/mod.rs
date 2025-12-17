@@ -10,29 +10,25 @@ use crate::{
 pub mod attr;
 pub mod dir;
 pub mod pipe;
-pub mod creds;
 pub mod syscalls;
 pub mod path;
 pub mod pathbuf;
-pub mod rsrc_lim;
 pub mod fd_table;
-pub mod thread_group;
 pub mod signal;
+pub mod sigaction;
 pub mod ids;
-pub mod auxv;
+pub mod creds;
+pub mod thread_group;
 pub mod wait;
-pub mod timespec;
 
-pub use rsrc_lim::*;
 pub use fd_table::*;
-pub use auxv::*;
+pub use signal::*;
+pub use sigaction::*;
+pub use ids::*;
+pub use creds::*;
+pub use thread_group::*;
 pub use pathbuf::*;
 pub use wait::*;
-pub use creds::*;
-pub use timespec::*;
-pub use thread_group::*;
-pub use signal::*;
-pub use ids::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct CharDevDescriptor {

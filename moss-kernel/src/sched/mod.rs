@@ -4,7 +4,6 @@ use crate::{
     per_cpu,
     task::{TASK_LIST, Task, TaskDescriptor, TaskState},
     UserAddressSpace,    
-    OnceLock,
 };
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, sync::Arc};
 use core::cmp::Ordering;
@@ -191,7 +190,7 @@ pub fn sched_init() {
         task_list.insert(init_task.descriptor(), Arc::downgrade(&init_task.state));
     }
 
-    insert_task(idle_task);
+    //    insert_task(idle_task);
     insert_task(init_task.clone());
 
     SCHED_STATE
@@ -199,22 +198,11 @@ pub fn sched_init() {
         .switch_to_task(None, init_task)
         .expect("Failed to switch to init task");
 }
-
+/*
 pub fn sched_init_secondary() {
-    let idle_task = get_idle_task();
-
-    insert_task(idle_task.clone());
-
     SCHED_STATE
         .borrow_mut()
         .switch_to_task(None, idle_task)
         .expect("Failed to swtich to idle task");
 }
-
-fn get_idle_task() -> Arc<Task> {
-    static IDLE_TASK: OnceLock<Arc<Task>> = OnceLock::new();
-
-    IDLE_TASK
-        .get_or_init(|| Arc::new(ArchImpl::create_idle_task()))
-        .clone()
-}
+*/

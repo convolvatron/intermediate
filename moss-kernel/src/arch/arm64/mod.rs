@@ -2,7 +2,6 @@ use aarch64_cpu::{
     asm::wfi,
     registers::{DAIF, MPIDR_EL1, ReadWriteable, Readable},
 };
-use alloc::sync::Arc;
 use cpu_ops::{local_irq_restore, local_irq_save};
 use exceptions::ExceptionState;
 use memory::{

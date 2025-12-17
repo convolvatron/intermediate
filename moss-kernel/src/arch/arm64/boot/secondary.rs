@@ -68,7 +68,7 @@ extern "C" fn do_secondary_start(boot_info: *const SecondaryBootInfo) {
     )
 }
 
-fn prepare_for_secondary_entry() -> Result<(PA, PA)> {
+fn prepare_for_secondary_entry() -> Result<(PA, PA), KernelError> {
     static mut SECONDARY_BOOT_CTX: MaybeUninit<SecondaryBootInfo> = MaybeUninit::uninit();
 
     let entry_fn = kfunc_pa!(do_secondary_start as *const () as usize);
@@ -104,7 +104,7 @@ fn prepare_for_secondary_entry() -> Result<(PA, PA)> {
     Ok((entry_fn, ctx))
 }
 
-fn do_boot_secondary(cpu_node: fdt_parser::Node<'static>) -> Result<()> {
+fn do_boot_secondary(cpu_node: fdt_parser::Node<'static>) -> Result<(), KernelError> {
     let id = cpu_node
         .reg()
         .and_then(|mut x| x.next().map(|x| x.address))
@@ -123,9 +123,7 @@ fn do_boot_secondary(cpu_node: fdt_parser::Node<'static>) -> Result<()> {
 
     while !SECONDARY_BOOT_FLAG.load(Ordering::Acquire) {
         spin_loop();
-        if let Some(timeout) = timeout
-            && let Some(now) = now()
-            && now >= timeout
+        if now() >= timeout
         {
             return Err(KernelError::Other("timeout waiting for core entry"));
         }

@@ -1,7 +1,8 @@
 use crate::{
     SigId,
+    linux::KSignalAction,
     sched::SCHED_STATE, current_task, waker::create_waker, sched::schedule,
-    arch::{Arch, ArchImpl},
+    arch::{ArchImpl},
     task::TaskState,
     ctx::UserCtx,
     //exit::kernel_exit_with_signal,

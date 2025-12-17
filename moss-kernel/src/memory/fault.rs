@@ -58,7 +58,7 @@ pub fn handle_demand_fault(
             let pg_buf = &mut new_page.as_slice_mut()
                 [vma_read.page_offset..vma_read.page_offset + vma_read.read_len];
 
-            vma_read.inode.read_at(vma_read.file_offset, pg_buf).await?;
+            //            vma_read.inode.read_at(vma_read.file_offset, pg_buf).await?;
 
             // Since the above may have put the task to sleep, revalidate the
             // VMA access.

@@ -1,9 +1,10 @@
 use syscall::Oid;
 use crate::{memory::uaccess::UserCopyable,
+            OpenFlags,
             error::FsError,
             KernelError,
 };
-use alloc::{sync::Arc, vec::Vec};
+use alloc::{vec::Vec};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -67,11 +68,11 @@ impl FileDescriptorTable {
         }
     }
     /// Inserts a new file into the table, returning the new file descriptor.
-    pub fn insert(&mut self, file: Oid, oflags:OpenFlags) -> Result<Fd, KernelError> {
+    pub fn insert(&mut self, obj: Oid, oflags:OpenFlags) -> Result<Fd, KernelError> {
         let fd = self.find_free_fd()?;
 
         let entry = FileDescriptorEntry {
-            obj:Oid,
+            obj,
             oflags,
             pos:0,
             flags: FdFlags::default(),

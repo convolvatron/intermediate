@@ -1,4 +1,6 @@
 
+use syscall::Oid;
+
 use crate::{
     Instant,
     arch::{Arch, ArchImpl},
@@ -7,19 +9,17 @@ use crate::{
     VirtualMemory,
     memory::{
         address::VA,
-        proc_vm::{ProcessVM, vmarea::VMArea},
+        proc_vm::{ProcessVM},
     },
-    Context, UserCtx,
     //    creds::Credentials,
     linux::{
+        Credentials,
         Tgid,
         ThreadGroup,
         PathBuf,
         FileDescriptorTable,        
-        ThreadGroupBuilder,
         SigId,
         SigSet,
-        SignalState,
     },
 };
 
@@ -112,10 +112,10 @@ pub struct Task {
     pub tid: Tid,
     pub process: Arc<ThreadGroup>,
     pub vm: Arc<SpinLock<ProcVM>>,
-    pub cwd: Arc<SpinLock<(Arc<dyn Inode>, PathBuf)>>,
+    pub cwd: Arc<SpinLock<(Oid, PathBuf)>>,
     pub creds: SpinLock<Credentials>,
     pub fd_table: Arc<SpinLock<FileDescriptorTable>>,
-    pub ctx: SpinLock<Context>,
+    pub ctx: SpinLock<crate::task::Context>,
     pub sig_mask: SpinLock<SigSet>,
     pub pending_signals: SpinLock<SigSet>,
     pub vruntime: SpinLock<u64>,
@@ -124,7 +124,7 @@ pub struct Task {
     pub priority: i8,
     pub last_run: SpinLock<Option<Instant>>,
     pub state: Arc<SpinLock<TaskState>>,
-    pub robust_list: SpinLock<Option<TUA<RobustListHead>>>,
+    pub robust_list: SpinLock<Option<TUA<crate::linux::RobustListHead>>>,
 }
 
 impl Task {
@@ -133,7 +133,7 @@ impl Task {
             tid: Tid(1),
             process: ThreadGroupBuilder::new(Tgid::init()).build(),
             state: Arc::new(SpinLock::new(TaskState::Runnable)),
-            cwd: Arc::new(SpinLock::new((Arc::new(DummyInode {}), PathBuf::new()))),
+            cwd: Arc::new(SpinLock::new((0, PathBuf::new()))),
             creds: SpinLock::new(Credentials::new_root()),
             vm: Arc::new(SpinLock::new(
                 ProcessVM::empty().expect("Could not create init process's VM"),
@@ -145,7 +145,7 @@ impl Task {
             deadline: SpinLock::new(None),
             sig_mask: SpinLock::new(SigSet::empty()),
             priority: 0,
-            ctx: SpinLock::new(Context::from_user_ctx(
+            ctx: SpinLock::new(crate::Context::from_user_ctx(
                 <ArchImpl as Arch>::new_user_context(VA::null(), VA::null()),
             )),
             last_run: SpinLock::new(None),

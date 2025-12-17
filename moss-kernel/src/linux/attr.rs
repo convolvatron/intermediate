@@ -1,9 +1,8 @@
 use crate::{
     error::{KernelError},
-    linux::ids::{Gid, Uid},
+    linux::{Gid, Uid, FileType},
 };
 
-use super::{FileType, InodeId};
 use bitflags::bitflags;
 use core::time::Duration;
 
@@ -45,9 +44,10 @@ bitflags! {
 }
 
 /// Represents file metadata, similar to `stat`.
+// this isn't the user one - we're going to have issues with id == 8 bytes
 #[derive(Debug, Clone)]
 pub struct FileAttr {
-    pub id: InodeId,
+    pub id: u64,
     pub size: u64,
     pub block_size: u32,
     pub blocks: u64,
@@ -64,7 +64,7 @@ pub struct FileAttr {
 impl Default for FileAttr {
     fn default() -> Self {
         Self {
-            id: InodeId::dummy(),
+            id: 0,
             size: 0,
             block_size: 0,
             blocks: 0,
