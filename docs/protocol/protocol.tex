@@ -1,0 +1,101 @@
+\documentclass[]{article}
+\usepackage[left=2.5cm,right=2.5cm,top=2.0cm,bottom=2.5cm]{geometry}
+\usepackage{graphicx}
+\graphicspath{.}
+\title{System Call Proxy Protocol}
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This document describes a distributed dataplane to support clustered
+operating system functions. For no strong reason we have selected
+triples, or entity-attribte-value(EAV) assertions as the foundation.
+Arbitrary length tuples with schema, basically relational tables is another
+suitable substrate, as is a simple nested hierarchy. 
+
+We put a little structure around our triples and then address some of the
+issues around distributed evaluation of programs that operate on this
+EAV graph. 
+
+\section{Triples Model}
+Triples came out of the semantic web, although I'm sure there are
+precedents, and were used in products such as the metaweb Freebase
+that Google acquired. Objects in the system are given globally
+unique identifiers. Each of these objects has a set of properties
+described by the attribute field, and each attribute for an entity has
+exactly one value. So we can view EAVs as really just a property list or
+hashmap.
+
+Since the value can be another entity, triples can also be used to
+form a graph of entities with labelled edges. When developing schema
+for this system (for some reason we use the word ontology), its quite
+common for the attributes themselves to be objects, although this
+isn't a usage we will pursue.
+
+The objects of interest in our system are things like:
+\begin{itemize}
+   \item machines
+   \item processes
+   \item users
+   \item files
+\end{itemize}
+
+It shouldn't be contentious that we can use this graph to model
+operating system state, in particular the posix-esque semantics of
+linux syscalls. If not, hopefully the following details will paint a
+better picture.
+
+\subsection{Entities}
+Entities are the objects of our system, and to facilitate distribute
+evaluation we will also use them as addresses for purposes of
+routing. We also need to construct them in such a way that they can
+efficiently generated, and that we can never have two objects anywhere
+in the world with the same name.
+
+There are probably too many dependencies on the ultimate distribution
+methodology to make an authoratative design, but this can serve as
+an illustrative example:
+
+
+\subsection{Attributes}
+\subsection{Values}
+
+\section{Methods}
+
+\subsection{set(entity, atribute, value)}
+\subsection{get(entity, attribute) -> value}
+\subsection{copy(source, dest, length)}
+
+\subsection{Addresses}
+The {\em source} and {\em dest} parameters.
+
+
+
+\section{Program Blocks}
+
+
+
+\section{Concurrency}
+The
+
+The current implementation does not provide any global isolation or
+serializability for the execution of blocks. If services are provided on top of
+a system like Linux, then its very difficult to introduce these concepts because
+the underlying facilites aren't 2-phase - they cant in any way promise to commit.
+
+\section{Security}
+There is a nice design where blocks are signed by principals, and
+contain signed statements of delegated authority. A user might start a
+process and sign a statement including the processes new public key
+and a set of grants in EAV space.
+
+This setup directly contradicts the idea that programs can be rewritten to
+effect evaluation policy. Most of the value of signed delegation comes from its
+end-to-end to property. The provider of a service doesn't have to trust the network,
+just the principal for which it has it own chain of trust. Re-signing subrequests
+puts in back in a position where we need to trust everyone.
+
+
+    
+\section{Errors}
