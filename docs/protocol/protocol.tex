@@ -1,6 +1,7 @@
 \documentclass[]{article}
 \usepackage[left=2.5cm,right=2.5cm,top=2.0cm,bottom=2.5cm]{geometry}
 \usepackage{graphicx}
+\usepackage{hyperref}
 \graphicspath{.}
 \title{System Call Proxy Protocol}
 \begin{document}
@@ -19,12 +20,13 @@ issues around distributed evaluation of programs that operate on this
 EAV graph. 
 
 \section{Triples Model}
-Triples came out of the semantic web, although I'm sure there are
-precedents, and were used in products such as the metaweb Freebase
-that Google acquired. Objects in the system are given globally
-unique identifiers. Each of these objects has a set of properties
-described by the attribute field, and each attribute for an entity has
-exactly one value. So we can view EAVs as really just a property list or
+Triples came out of the semantic web, in a specification called RDF,
+where unfrotuantely the mapping between XML and RDF was left
+undefined (\href{https://en.wikipedia.org/wiki/Resource_Description_Framework}).
+Objects in the system are given globally unique
+identifiers. Each of these objects has a set of properties described
+by the attribute field, and each attribute for an entity has exactly
+one value. So we can view EAVs as really just a property list or
 hashmap.
 
 Since the value can be another entity, triples can also be used to
@@ -55,24 +57,47 @@ in the world with the same name.
 
 There are probably too many dependencies on the ultimate distribution
 methodology to make an authoratative design, but this can serve as
-an illustrative example:
-
+an illustrative example:\\
+\vspace{0.2in}
+\begin{center}
+  \includegraphics[scale=0.8]{entity.pdf}
+\end{center}  
 
 \subsection{Attributes}
+In many triple setups, the attributes are entities themselves. This allows
+attribute metadata such as kind of modifier, historical information, references
+into specifications, etc. At the other end of the spectrum attributes are
+selected from a small set of predefined integers. For the initial system we propose a middle
+ground, that attributes be freeform strings. In order to bring some modicum of
+standardization and control to the layout of objects, we introduce a simple
+schema definition to publish known keys and support validation. 
+
 \subsection{Values}
 
-\section{Methods}
+\section{Schema}
 
-\subsection{set(entity, atribute, value)}
+\section{Commands}
+
+\subsection{set(entity, attribute, value)}
 \subsection{get(entity, attribute) -> value}
-\subsection{copy(source, dest, length)}
+\subsection{copy(dest, source, length)}
+Copies {\em length} bytes from the {\em source} bytestring to the {\em dest}. It
+is an error if both the referred objects are not byte strings. For convenience if
+the destination is an (entity, attribute) pair which current is unbound, then
+the binding is created and set to the bytestring specified by the source address.
+
 
 \subsection{Addresses}
-The {\em source} and {\em dest} parameters.
-
-
+The {\em source} and {\em dest} parameters are compound addresses. Addresses refer
+to byte ranges in values.
+\begin{description}
+  \item {value(e, a)}
+  \item {offset(A, count)}
+  \item {region\_id(A, count)}    
+\end{description}    
 
 \section{Program Blocks}
+Collections of commands are grouped together into {\em blocks}.
 
 
 
@@ -99,3 +124,4 @@ puts in back in a position where we need to trust everyone.
 
     
 \section{Errors}
+\end{document}
