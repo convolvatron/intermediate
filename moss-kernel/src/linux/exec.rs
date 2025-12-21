@@ -40,15 +40,56 @@ const STACK_END: usize = 0x0000_8000_0000_0000;
 const STACK_SZ: usize = 0x2000 * 0x400;
 const STACK_START: usize = STACK_END - STACK_SZ;
 
+
+pub fn load_from_pheader<E: Endian>(
+    executable: Oid,
+    hdr: ProgramHeader64<E>,
+    endian: E,
+) {
+    let mut permissions = VMAPermissions {
+        read: false,
+        write: false,
+        execute: false,
+    };
+    
+    if hdr.p_flags(endian) & PF_X != 0 {
+        permissions.execute = true;
+    }
+    
+    if hdr.p_flags(endian) & PF_R != 0 {
+        permissions.read = true;
+    }
+
+    if hdr.p_flags(endian) & PF_W != 0 {
+        permissions.write = true;
+    }
+    
+    let mappable_region = VirtMemoryRegion::new(
+        VA::from_value(hdr.p_vaddr(endian) as usize),
+        hdr.p_memsz(endian) as usize,
+    )
+        .to_mappable_region();
+    
+    Self {
+        region: mappable_region.region(),
+        kind: VMAreaKind::File(VMFileMapping {
+            file: f,
+            offset: hdr.p_offset(endian) - mappable_region.offset() as u64,
+            len: hdr.p_filesz(endian) + mappable_region.offset() as u64,
+        }),
+        permissions,
+    }
+}
+
+
 pub async fn kernel_exec(
-    inode: Arc<dyn Inode>,
+    executable: Oid,
     argv: Vec<String>,
     envp: Vec<String>,
 ) -> Result<()> {
-    let mut buf = [0u8; core::mem::size_of::<elf::FileHeader64<LittleEndian>>()];
     let mut auxv = Vec::new();
 
-    inode.read_at(0, &mut buf).await?;
+    let buf = object_read(executable, "contents", 0, core::mem::size_of::<elf::FileHeader64<LittleEndian>>());
 
     let elf = elf::FileHeader64::<LittleEndian>::parse(buf.as_slice())
         .map_err(|_| ExecError::InvalidElfFormat)?;
@@ -60,13 +101,9 @@ pub async fn kernel_exec(
     auxv.push(AT_PHENT);
     auxv.push(elf.e_phentsize(endian) as _);
 
-    let mut ph_buf = vec![
-        0u8;
-        elf.e_phnum.get(endian) as usize * elf.e_phentsize.get(endian) as usize
-            + elf.e_phoff.get(endian) as usize
-    ];
-
-    inode.read_at(0, &mut ph_buf).await?;
+    let ph_buf = object_read(executable, "contents", 0,
+                             elf.e_phnum.get(endian) as usize * elf.e_phentsize.get(endian) as usize
+                             + elf.e_phoff.get(endian) as usize);
 
     let hdrs = elf
         .program_headers(endian, ph_buf.as_slice())
@@ -79,6 +116,7 @@ pub async fn kernel_exec(
         let kind = hdr.p_type(endian);
 
         if kind == PT_LOAD {
+            // backing store, lets just read ahead
             vmas.push(VMArea::from_pheader(inode.clone(), *hdr, endian));
 
             if hdr.p_offset.get(endian) == 0 {

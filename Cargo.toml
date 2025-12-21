@@ -5,6 +5,6 @@ edition = "2024"
 
 [dependencies]
 xhypervisor={version="*", path="xhypervisor"}
-syscall={version="*", path="./syscall"}
+protocol={version="*", path="./protocol"}
 elf = "*"
 

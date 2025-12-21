@@ -1,4 +1,4 @@
-use syscall::Oid;
+use protocol::Oid;
 use crate::{memory::uaccess::UserCopyable,
             OpenFlags,
             error::FsError,

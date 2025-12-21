@@ -10,7 +10,6 @@ pub mod general;
 //mod timespec;
 mod interrupts;
 mod memory;
-mod sched;
 mod sync;
 mod error;
 mod linux;

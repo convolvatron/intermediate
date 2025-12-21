@@ -4,7 +4,6 @@ pub mod mutex;
 pub mod once_lock;
 pub mod per_cpu;
 pub mod spinlock;
-pub mod waker_set;
 
 use crate::arch::ArchImpl;
 pub use per_cpu::*;

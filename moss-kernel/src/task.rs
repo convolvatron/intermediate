@@ -1,5 +1,5 @@
 
-use syscall::Oid;
+use protocol::Oid;
 
 use crate::{
     Instant,

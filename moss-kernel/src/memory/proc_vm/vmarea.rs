@@ -11,7 +11,7 @@
 //!   the process stack, heap, and BSS sections.
 use core::cmp;
 
-use syscall::Oid;
+use protocol::Oid;
 use crate::{
     memory::{PAGE_MASK, PAGE_SIZE, address::VA, region::VirtMemoryRegion},
 };

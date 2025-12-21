@@ -20,6 +20,7 @@ pub mod ids;
 pub mod creds;
 pub mod thread_group;
 pub mod wait;
+pub mod process;
 
 pub use fd_table::*;
 pub use signal::*;
