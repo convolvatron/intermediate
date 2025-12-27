@@ -1,6 +1,6 @@
 use crate::{
     memory::uaccess::{copy_to_user_slice},
-    sched::current_task,
+    current_task,
 };
 use alloc::{ffi::CString, string::ToString};
 use core::{ffi::c_char, str::FromStr};

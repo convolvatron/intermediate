@@ -2,7 +2,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::{
     linux::Fd,
-    sched::current_task,
+    current_task,
     error::KernelError,
     memory::{
         address::VA,

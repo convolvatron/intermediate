@@ -2,7 +2,7 @@ use bitflags::bitflags;
 use crate::error::KernelError;
 use crate::memory::address::TUA;
 use crate::memory::uaccess::{UserCopyable, copy_from_user, copy_to_user};
-use crate::sched::current_task;
+use crate::current_task;
 
 use crate::linux::{UserSigId, SigActionState, SigId, SigSet};
 

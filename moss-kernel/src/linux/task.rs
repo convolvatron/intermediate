@@ -1,26 +1,27 @@
 
+use protocol::{Oid, Entity, Attribute, Value};
+
 use crate::{
+    Context,
+    per_cpu,
     Instant,
-    threading::RobustListHead,
+    PathBuf,
+    RobustListHead,
     arch::{Arch, ArchImpl},
-    fs::DummyInode,
     sync::SpinLock,
     memory::address::TUA,
     VirtualMemory,
-    fs::pathbuf::PathBuf,
     memory::{
         address::VA,
-        proc_vm::{ProcessVM, vmarea::VMArea},
+        proc_vm::ProcessVM,
     },
     creds::Credentials,
     fd_table::FileDescriptorTable,
     
     linux::{
         Tgid, ThreadGroup,
-        Context, UserCtx,
-        builder::ThreadGroupBuilder,
-        signal::{SigId, SigSet, SignalState},
-    };
+        ThreadGroupBuilder,
+    },
 };
 
 use alloc::{
@@ -112,12 +113,12 @@ pub struct Task {
     pub tid: Tid,
     pub process: Arc<ThreadGroup>,
     pub vm: Arc<SpinLock<ProcVM>>,
-    pub cwd: Arc<SpinLock<(Arc<dyn Inode>, PathBuf)>>,
+    pub cwd: Arc<SpinLock<Oid>>,
     pub creds: SpinLock<Credentials>,
     pub fd_table: Arc<SpinLock<FileDescriptorTable>>,
     pub ctx: SpinLock<Context>,
-    pub sig_mask: SpinLock<SigSet>,
-    pub pending_signals: SpinLock<SigSet>,
+//    pub sig_mask: SpinLock<SigSet>,
+//    pub pending_signals: SpinLock<SigSet>,
     pub vruntime: SpinLock<u64>,
     pub exec_start: SpinLock<Option<Instant>>,
     pub deadline: SpinLock<Option<Instant>>,
@@ -128,12 +129,12 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn create_init_task() -> Self {
+    pub fn new(working: Oid) -> Self {
         Self {
             tid: Tid(1),
             process: ThreadGroupBuilder::new(Tgid::init()).build(),
             state: Arc::new(SpinLock::new(TaskState::Runnable)),
-            cwd: Arc::new(SpinLock::new((Arc::new(DummyInode {}), PathBuf::new()))),
+            cwd: Arc::new(SpinLock::new((working, PathBuf::new()))),
             creds: SpinLock::new(Credentials::new_root()),
             vm: Arc::new(SpinLock::new(
                 ProcessVM::empty().expect("Could not create init process's VM"),
@@ -175,9 +176,9 @@ impl Task {
         TaskDescriptor::from_tgid_tid(self.process.tgid, self.tid)
     }
 
-    pub fn raise_task_signal(&self, signal: SigId) {
-        self.pending_signals.lock_save_irq().insert(signal.into());
-    }
+//    pub fn raise_task_signal(&self, signal: SigId) {
+//        self.pending_signals.lock_save_irq().insert(signal.into());
+//    }
 }
 
 pub static TASK_LIST: SpinLock<BTreeMap<TaskDescriptor, Weak<SpinLock<TaskState>>>> =
@@ -185,3 +186,24 @@ pub static TASK_LIST: SpinLock<BTreeMap<TaskDescriptor, Weak<SpinLock<TaskState>
 
 unsafe impl Send for Task {}
 unsafe impl Sync for Task {}
+
+per_cpu! {
+    static CURRENT_TASK: Option<Task> = None;
+}
+
+pub fn current_task() -> Task {
+    CURRENT_TASK.clone()
+}
+
+
+pub struct TaskTable {
+}
+
+impl Entity for TaskTable {
+    fn keys() -> alloc::vec::Vec<Attribute> {
+    }
+    fn get(a:Attribute) -> Value {
+    }
+    fn set(a:Attribute, v:Value) {
+    }
+}

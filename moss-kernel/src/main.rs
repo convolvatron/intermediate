@@ -13,7 +13,6 @@ mod memory;
 mod sync;
 mod error;
 mod linux;
-mod task;
 mod ctx;
 
 pub use general::*;
@@ -21,10 +20,9 @@ pub use sync::*;
 pub use memory::*;
 pub use error::*;
 pub use linux::*;
-pub use sched::*;
 pub use ctx::*;
 
-use crate::uspc_ret::dispatch_userspace_task;
+//use crate::uspc_ret::dispatch_userspace_task;
 
 
 
@@ -68,13 +66,7 @@ pub fn now() -> Instant {
 }
 
 pub fn kmain(ctx_frame: *mut UserCtx) {
-    sched_init();
-
-//    register_fs_drivers();
-
-//    let kopts = parse_args(&args);
-
-    spawn_kernel_work(launch_init());
-
-    dispatch_userspace_task(ctx_frame)
+//    spawn_kernel_work(launch_init());
+    //    dispatch_userspace_task(ctx_frame)
+    loop{}
 }

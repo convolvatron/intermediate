@@ -6,7 +6,7 @@ use crate::{
     memory::address::UA,
     memory::uaccess::copy_to_user_slice,
     linux::Fd,
-    sched::current_task,
+    current_task,
 };
 
 #[repr(u8)]
@@ -60,13 +60,11 @@ pub async fn sys_getdents64(fd: Fd, mut ubuf: UA, size: u32) -> Result<usize, Ke
 
     let (ops, ctx) = &mut *file.lock().await;
 
-    let mut entries_iter = ops.readdir(ctx).await?;
+    let mut entries = file.oid.get();
 
     let mut bytes_written = 0;
 
-    // Iterate through the directory's entries, skipping those we've already
-    // read.
-    while let Some(de) = entries_iter.peek() {
+    while let Some(de) = entries.next().await {
         let c_str_name = CString::new(de.name.clone()).map_err(|_| KernelError::InvalidValue)?;
         let name_buf = c_str_name.as_bytes_with_nul();
         let name_len = name_buf.len();

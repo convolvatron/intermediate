@@ -1,12 +1,12 @@
 use crate::{
-    process::{Tid, thread_group::pid::PidT},
+    process::{Tid, thread_group::pid::Pid},
     sched::current_task,
 };
 use crate::error::{KernelError};
 
 use super::{SigId, uaccess::UserSigId};
 
-pub fn sys_kill(_pid: PidT, _signal: UserSigId) -> Result<usize, KernelError> {
+pub fn sys_kill(_pid: Pid, _signal: UserSigId) -> Result<usize, KernelError> {
     // let target_tg = Tgid(pid as _);
 
     // let signal: SigId = signal.try_into()?;
@@ -14,7 +14,7 @@ pub fn sys_kill(_pid: PidT, _signal: UserSigId) -> Result<usize, KernelError> {
     todo!();
 }
 
-pub fn sys_tkill(tid: PidT, signal: UserSigId) -> Result<usize, KernelError> {
+pub fn sys_tkill(tid: Pid, signal: UserSigId) -> Result<usize, KernelError> {
     let target_tid = Tid(tid as _);
     let current_task = current_task();
 

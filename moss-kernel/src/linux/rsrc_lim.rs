@@ -1,12 +1,12 @@
 use crate::{
+    current_task,
     error::KernelError,
     memory::address::TUA,
 };
 
 use crate::{
     memory::uaccess::{UserCopyable, copy_from_user, copy_to_user},
-    sched::current_task,
-    linux::{PidT, thread_group::TG_LIST, Tgid}
+    linux::Pid,
 };
 
 #[repr(u32)]
@@ -182,7 +182,7 @@ impl ResourceLimits {
 }
 
 pub async fn sys_prlimit64(
-    pid: PidT,
+    pid: Pid,
     resource: u32,
     new_rlim: TUA<RLimit>,
     old_rlim: TUA<RLimit>,
@@ -191,14 +191,16 @@ pub async fn sys_prlimit64(
 
     let task = if pid == 0 {
         current_task().process.clone()
-    } else {
+    };
+/*    
+    else {
         TG_LIST
             .lock_save_irq()
             .get(&Tgid::from_pid_t(pid))
             .and_then(|x| x.upgrade())
             .ok_or(KernelError::NoProcess)?
     };
-
+*/
     let new_limit = if !new_rlim.is_null() {
         Some(copy_from_user(new_rlim).await?)
     } else {

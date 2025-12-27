@@ -1,6 +1,6 @@
 use crate::{
     linux::Fd,
-    sched::current_task,
+    current_task,
     KernelError,
     memory::address::UA,
 };

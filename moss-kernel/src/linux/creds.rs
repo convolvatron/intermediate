@@ -3,7 +3,7 @@ use core::convert::Infallible;
 use crate::{
     KernelError,
     memory::uaccess::{UserCopyable, copy_to_user},
-    sched::current_task,
+    current_task,
     linux::{Uid, Gid},
     memory::address::TUA,
 };

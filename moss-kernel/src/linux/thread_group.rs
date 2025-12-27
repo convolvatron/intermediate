@@ -1,11 +1,15 @@
 use crate::{
+    current_task,
+    address::{TUA, VA},
+    KernelError,
+    ResourceLimits,    
     task::{Task, Tid},
     memory::uaccess::UserCopyable,
-    linux::PidT,
+    linux::Pid,
     //linux::ResourceLimits,
     //signal::{SigSet, SignalState},
-    wait::ChildNotifiers,
-    linux::{SigSet, SignalState},
+    // wait::ChildNotifiers,
+//    linux::{SigSet, SignalState},
     SpinLock};
 
 use core::sync::atomic::AtomicU32;
@@ -42,7 +46,7 @@ impl Tgid {
         Self(0)
     }
 
-    pub fn from_pid_t(pid: PidT) -> Tgid {
+    pub fn from_pid_t(pid: Pid) -> Tgid {
         Self(pid as _)
     }
 }
@@ -91,10 +95,10 @@ pub struct ThreadGroup {
     pub parent: SpinLock<Option<Weak<ThreadGroup>>>,
     pub children: SpinLock<BTreeMap<Tgid, Arc<ThreadGroup>>>,
     pub threads: SpinLock<BTreeMap<Tid, Weak<Task>>>,
-    pub signals: Arc<SpinLock<SignalState>>,
+//    pub signals: Arc<SpinLock<SignalState>>,
     pub rsrc_lim: Arc<SpinLock<ResourceLimits>>,
-    pub pending_signals: SpinLock<SigSet>,
-    pub child_notifiers: ChildNotifiers,
+//    pub pending_signals: SpinLock<SigSet>,
+//    pub child_notifiers: ChildNotifiers,
     next_tid: AtomicU32,
 }
 
@@ -166,7 +170,7 @@ pub struct ThreadGroupBuilder {
     tgid: Tgid,
     parent: Option<Arc<ThreadGroup>>,
     umask: Option<u32>,
-    sigstate: Option<Arc<SpinLock<SignalState>>>,
+//    sigstate: Option<Arc<SpinLock<SignalState>>>,
     rsrc_lim: Option<Arc<SpinLock<ResourceLimits>>>,
 }
 
@@ -185,12 +189,6 @@ impl ThreadGroupBuilder {
     /// Sets the parent of the thread group.
     pub fn with_parent(mut self, parent: Arc<ThreadGroup>) -> Self {
         self.parent = Some(parent);
-        self
-    }
-
-    /// Sets the signal state of the thread group.
-    pub fn with_sigstate(mut self, sigstate: Arc<SpinLock<SignalState>>) -> Self {
-        self.sigstate = Some(sigstate);
         self
     }
 
@@ -229,4 +227,37 @@ impl ThreadGroupBuilder {
 
         ret
     }
+}
+
+pub async fn sys_set_tid_address(_tidptr: VA) -> Result<usize, KernelError> {
+    let tid = current_task().tid;
+
+    // TODO: implement threading and this system call properly. For now, we just
+    // return the PID as the thread id.
+    Ok(tid.value() as _)
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RobustList {
+    next: TUA<RobustList>,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RobustListHead {
+    list: RobustList,
+//    futex_offset: c_long,
+    list_op_pending: RobustList,
+}
+
+pub async fn sys_set_robust_list(head: TUA<RobustListHead>, len: usize) -> Result<usize, KernelError> {
+    if core::hint::unlikely(len != size_of::<RobustListHead>()) {
+        return Err(KernelError::InvalidValue);
+    }
+
+    let task = current_task();
+    task.robust_list.lock_save_irq().replace(head);
+
+    Ok(0)
 }

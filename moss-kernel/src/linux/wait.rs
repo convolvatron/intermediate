@@ -4,7 +4,7 @@ use crate::sched::current_task;
 use crate::CondVar;
 use alloc::collections::btree_map::BTreeMap;
 use bitflags::Flags;
-use crate::sync::condvar::WakeupType;
+//use crate::sync::condvar::WakeupType;
 use crate::{
     error::KernelError,
     memory::address::TUA,
@@ -12,8 +12,6 @@ use crate::{
 
 use crate::linux::Tgid;
 use crate::linux::SigId;
-
-pub type PidT = i32;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

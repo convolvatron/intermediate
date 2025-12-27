@@ -2,6 +2,7 @@ use core::mem;
 
 use crate::{
     KernelError,
+    current_task,
     UserAddressSpace,
     memory::{address::VA, proc_vm::vmarea::AccessKind, region::VirtMemoryRegion},    
     arch::arm64::{
@@ -12,7 +13,6 @@ use crate::{
         memory::uaccess::{UACESS_ABORT_DEFERRED, UACESS_ABORT_DENIED},
     },
     memory::fault::{FaultResolution, handle_demand_fault, handle_protection_fault},
-    sched::{current_task, spawn_kernel_work},
 };
 use alloc::boxed::Box;
 

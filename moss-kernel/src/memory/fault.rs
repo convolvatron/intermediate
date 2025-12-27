@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use crate::{
     task::ProcVM,
-    sched::current_task,
+    current_task,
     KernelError,
     PageInfo,
     UserAddressSpace,

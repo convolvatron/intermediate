@@ -1,4 +1,4 @@
-use crate::{linux::Fd, sched::current_task};
+use crate::{linux::Fd, current_task};
 use alloc::sync::Arc;
 use crate::error::KernelError;
 

@@ -1,5 +1,5 @@
 pub mod address;
-pub mod kbuf;
+//pub mod kbuf;
 pub mod page;
 pub mod page_alloc;
 pub mod permissions;

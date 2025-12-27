@@ -1,4 +1,4 @@
-use crate::{linux::Fd, sched::current_task};
+use crate::{linux::Fd, current_task};
 use crate::error::KernelError;
 
 pub async fn sys_ioctl(fd: Fd, request: usize, arg: usize) -> Result<usize, KernelError> {
