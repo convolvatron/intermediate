@@ -25,6 +25,7 @@ use crate::{
 };
 
 use alloc::{
+    string::String,
     collections::btree_map::BTreeMap,
     sync::{Arc, Weak},
 };
@@ -113,7 +114,9 @@ pub struct Task {
     pub tid: Tid,
     pub process: Arc<ThreadGroup>,
     pub vm: Arc<SpinLock<ProcVM>>,
-    pub cwd: Arc<SpinLock<Oid>>,
+    // inodes can have multiple valid paths, so we keep the one the user traversed
+    // to get here, and keep it with the inode so that we can update them both atomically
+    pub cwd: Arc<SpinLock<(Oid, String)>>,
     pub creds: SpinLock<Credentials>,
     pub fd_table: Arc<SpinLock<FileDescriptorTable>>,
     pub ctx: SpinLock<Context>,

@@ -23,9 +23,7 @@ use crate::memory::{
     smalloc::{RegionList, Smalloc},
 };
 
-pub mod brk;
 pub mod fault;
-pub mod mmap;
 pub mod uaccess;
 
 pub type PageOffsetTranslator = crate::memory::pg_offset::PageOffsetTranslator<ArchImpl>;

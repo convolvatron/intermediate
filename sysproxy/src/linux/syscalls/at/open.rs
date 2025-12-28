@@ -16,8 +16,7 @@ pub async fn sys_openat(
 
     let flags = OpenFlags::from_bits_truncate(flags);
     let path = Path::new(UserCStr::from_ptr(path).copy_from_user(&mut buf).await?);
-    let start_node = resolve_at_start_node(dirfd, path).await?;
-    let fd = 7;
-
+    
+    // allocate fd
     Ok(fd)
 }

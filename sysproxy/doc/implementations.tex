@@ -1,11 +1,22 @@
 \documentclass[]{article}
 \usepackage[left=2.5cm,right=2.5cm,top=2.0cm,bottom=2.5cm]{geometry}
 \usepackage{graphicx}
+\usepackage{fancyhdr}
 \graphicspath{.}
 \title{System Call Intermediation}
-\begin{document}
-\maketitle
+\pagestyle{fancy}
+\fancyhf{}
+\lfoot{Draft Copy, do not distribute- \today}
+\rfoot{\textcopyright Eric Hoffman}
+\renewcommand{\headrulewidth}{0.0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\pagenumbering{arabic}
+\cfoot{\thepage}
 
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
 \section{Introduction}
 
 This document explores implementation options for syscall

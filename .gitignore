@@ -1,7 +1,9 @@
 target
-~
+*~
 Cargo.lock
-.aux
-.log
-.out
+*.aux
+*.log
+*.out
+*.pdf
+
 

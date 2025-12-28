@@ -65,6 +65,9 @@ pub fn now() -> Instant {
     SYS_TIMER.get().map(|timer| timer.driver.now())
 }
 
+// sysproxy object:
+//   filesystem root
+//   executable oid
 pub fn kmain(ctx_frame: *mut UserCtx) {
 //    spawn_kernel_work(launch_init());
     //    dispatch_userspace_task(ctx_frame)

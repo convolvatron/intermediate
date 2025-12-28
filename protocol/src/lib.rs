@@ -1,22 +1,18 @@
 #![no_std]
 #![allow(dead_code)]
 extern crate alloc;
-pub use alloc::{
-    sync::Arc,
-    string::String,
-    format,
-};
+pub use alloc::{format, string::String, sync::Arc};
 
 mod address;
-mod command;
 mod buffer;
-mod value;
+mod command;
 mod memory;
+mod value;
 
 pub use address::*;
+pub use buffer::*;
 pub use command::*;
 pub use value::*;
-pub use buffer::*;
 //pub use memory::*;
 
 pub struct Error {
@@ -34,7 +30,7 @@ macro_rules! err {
 
 type DynResolver = Arc<dyn Resolver>;
 pub trait Resolver {
-    fn resolve(&self, o:Oid) -> Result<DynEntity, Error>;
+    fn resolve(&self, o: Oid) -> Result<DynEntity, Error>;
 }
 
 // this needs to be parameterized by instance
@@ -47,7 +43,16 @@ type ChangeSet = alloc::vec::Vec<(Attribute, Value)>;
 type DynEntity = Arc<dyn Entity>;
 pub trait Entity {
     fn keys(&self) -> alloc::vec::Vec<Attribute>;
-    fn get(&self, a:Attribute) -> Result<Value, Error>;
-    fn set(&self, s:ChangeSet) ->Result<(), Error>;
-    fn copy(source:Address, dest:Address, length :usize) -> Result<(), Error> where Self: Sized;
+    fn get(&self, a: Attribute) -> Result<Value, Error>;
+    fn set(&self, s: ChangeSet) -> Result<(), Error>;
+    fn copy(source: Address, dest: Address, length: usize) -> Result<(), Error>
+    where
+        Self: Sized;
 }
+
+// there a whole .. allocation and routing thing that would have to be built. this is our
+// silly placeholder
+
+const TARGET: Oid = Oid(1000);
+const SYSPROXY: Oid = Oid(1000);
+const MONITOR: Oid = Oid(1000);
