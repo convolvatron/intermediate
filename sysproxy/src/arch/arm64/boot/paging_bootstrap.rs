@@ -1,21 +1,36 @@
 use core::ptr;
 
+use protocol::{Error, linuxerr};
+
 use aarch64_cpu::asm::barrier;
 use aarch64_cpu::registers::{MAIR_EL1, SCTLR_EL1, TCR_EL1, TTBR0_EL1, TTBR1_EL1};
-use crate::arch::arm64::memory::pg_descriptors::MemoryType;
-use crate::arch::arm64::memory::pg_tables::{
-    L0Table, MapAttributes, MappingContext, PageAllocator, PageTableMapper, PgTable, PgTableArray,
-    map_range,
-};
-use crate::arch::arm64::memory::tlb::NullTlbInvalidator;
-use crate::KernelError;
-use crate::memory::address::{AddressTranslator, IdentityTranslator, PA, TPA, TVA};
-use crate::memory::permissions::PtePermissions;
-use crate::memory::region::PhysMemoryRegion;
-use crate::memory::{PAGE_MASK, PAGE_SIZE};
-use tock_registers::interfaces::{ReadWriteable, Writeable};
 
-use crate::arch::arm64::memory::IMAGE_BASE;
+use crate::{
+    arch::arm64::memory::{
+        pg_descriptors::MemoryType,
+        pg_tables::{
+            L0Table,
+            MapAttributes,
+            MappingContext,
+            PageAllocator,
+            PageTableMapper,
+            PgTable,
+            PgTableArray,
+            map_range,
+        },
+        IMAGE_BASE,
+    },
+    memory::{
+        address::{AddressTranslator, IdentityTranslator, PA, TPA, TVA},
+        permissions::PtePermissions,
+        region::PhysMemoryRegion,
+        PAGE_MASK,
+        PAGE_SIZE,
+
+    }
+};
+
+use tock_registers::interfaces::{ReadWriteable, Writeable};
 
 use super::park_cpu;
 
@@ -50,9 +65,9 @@ impl StaticPageAllocator {
 }
 
 impl PageAllocator for StaticPageAllocator {
-    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, KernelError> {
+    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, Error> {
         if self.allocated == STATIC_PAGE_COUNT {
-            return Err(KernelError::NoMemory);
+            return linuxerr!(LinuxError::ENOMEM);
         }
 
         let ret = self.peek::<PgTableArray<T>>();
@@ -86,12 +101,12 @@ impl PageTableMapper for IdmapTranslator {
         &mut self,
         pa: TPA<PgTableArray<T>>,
         f: impl FnOnce(TVA<PgTableArray<T>>) -> R,
-    ) -> Result<R, KernelError> {
+    ) -> Result<R, Error> {
         Ok(f(pa.to_va::<IdentityTranslator>()))
     }
 }
 
-fn do_paging_bootstrap(static_pages: PA, image_addr: PA, fdt_addr: PA) -> Result<PA, KernelError> {
+fn do_paging_bootstrap(static_pages: PA, image_addr: PA, fdt_addr: PA) -> Result<PA, Error> {
     let mut bump_alloc = StaticPageAllocator::from_phys_adr(static_pages);
 
     // SAFETY: The MMU is currently disabled, accesses to physical ram will be
@@ -105,14 +120,14 @@ fn do_paging_bootstrap(static_pages: PA, image_addr: PA, fdt_addr: PA) -> Result
     let kernel_range = PhysMemoryRegion::new(image_addr, image_size);
 
     let mut translator = IdmapTranslator {};
-    let invalidator = NullTlbInvalidator {};
+//    let invalidator = NullTlbInvalidator {};
 
     let highmem_l0 = bump_alloc.allocate_page_table::<L0Table>()?;
 
     let mut bootstrap_ctx = MappingContext {
         allocator: &mut bump_alloc,
         mapper: &mut translator,
-        invalidator: &invalidator,
+  //      invalidator: &invalidator,
     };
 
     map_range(

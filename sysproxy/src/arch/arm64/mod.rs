@@ -8,7 +8,6 @@ use memory::{
     PAGE_OFFSET,
     address_space::Arm64ProcessAddressSpace,
     mmu::{Arm64KernelAddressSpace, KERN_ADDR_SPC},
-    uaccess::{Arm64CopyFromUser, Arm64CopyStrnFromUser, Arm64CopyToUser},
 };
 
 use crate::{
@@ -79,15 +78,6 @@ impl Arch for Aarch64 {
 
     fn name() -> &'static str {
         "aarch64"
-    }
-
-//    fn context_switch(new: Arc<Task
-//        proc::context_switch(new);
-//    }
-
-    fn power_off() -> ! {
-        // Fallback: halt the CPU indefinitely.
-        Self::halt()
     }
 
     unsafe fn copy_from_user(

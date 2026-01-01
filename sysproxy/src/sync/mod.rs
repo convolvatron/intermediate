@@ -12,4 +12,3 @@ pub type SpinLock<T> = spinlock::SpinLockIrq<T, ArchImpl>;
 pub type Mutex<T> = mutex::Mutex<T, ArchImpl>;
 pub type AsyncMutexGuard<'a, T> = mutex::AsyncMutexGuard<'a, T, ArchImpl>;
 pub type OnceLock<T> = once_lock::OnceLock<T, ArchImpl>;
-pub type CondVar<T> = condvar::CondVar<T, ArchImpl>;

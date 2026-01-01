@@ -79,7 +79,7 @@ impl Encodable for Value {
             x if x == 5 => Ok(Value::Oid(Oid(1))),
             x if x == 6 => Ok(Value::Oid(Oid(1))),
             x if x == 7 => Ok(Value::Oid(Oid(1))),
-            x => Err(err!("invalid Value codepoint {}", x)),
+            x => Err(err!(Oid(1), "invalid Value codepoint {}", x)),
         }
     }
 }

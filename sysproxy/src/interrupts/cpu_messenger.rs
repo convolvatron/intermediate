@@ -26,6 +26,7 @@ struct CpuMessenger {
     _irq: ClaimedInterrupt,
 }
 
+
 impl InterruptHandler for CpuMessenger {
     fn handle_irq(&self, _desc: InterruptDescriptor) {
         let message = CPU_MESSENGER

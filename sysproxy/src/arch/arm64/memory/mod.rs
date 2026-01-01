@@ -5,11 +5,15 @@ pub mod address_space;
 pub mod fault;
 pub mod fixmap;
 pub mod mmu;
-pub mod tlb;
-pub mod uaccess;
+//pub mod tlb;
+//pub mod uaccess;
 pub mod pg_descriptors;
 pub mod pg_tables;
 pub mod pg_walk;
+pub mod page_allocator;
+pub mod page_mapper;
+pub mod smalloc_page_allocator;
+
     
 pub const PAGE_OFFSET: usize = 0xffff_0000_0000_0000;
 pub const IMAGE_BASE: VA = VA::from_value(0xffff_8000_0000_0000);

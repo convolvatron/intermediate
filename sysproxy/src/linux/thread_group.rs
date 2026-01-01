@@ -2,7 +2,6 @@ use crate::{
     current_task,
     address::{TUA, VA},
     KernelError,
-    ResourceLimits,    
     task::{Task, Tid},
     memory::uaccess::UserCopyable,
     linux::Pid,
@@ -95,10 +94,6 @@ pub struct ThreadGroup {
     pub parent: SpinLock<Option<Weak<ThreadGroup>>>,
     pub children: SpinLock<BTreeMap<Tgid, Arc<ThreadGroup>>>,
     pub threads: SpinLock<BTreeMap<Tid, Weak<Task>>>,
-//    pub signals: Arc<SpinLock<SignalState>>,
-    pub rsrc_lim: Arc<SpinLock<ResourceLimits>>,
-//    pub pending_signals: SpinLock<SigSet>,
-//    pub child_notifiers: ChildNotifiers,
     next_tid: AtomicU32,
 }
 
@@ -171,7 +166,8 @@ pub struct ThreadGroupBuilder {
     parent: Option<Arc<ThreadGroup>>,
     umask: Option<u32>,
 //    sigstate: Option<Arc<SpinLock<SignalState>>>,
-    rsrc_lim: Option<Arc<SpinLock<ResourceLimits>>>,
+    //bs1
+//    rsrc_lim: Option<Arc<SpinLock<ResourceLimits>>>,
 }
 
 impl ThreadGroupBuilder {
@@ -189,11 +185,6 @@ impl ThreadGroupBuilder {
     /// Sets the parent of the thread group.
     pub fn with_parent(mut self, parent: Arc<ThreadGroup>) -> Self {
         self.parent = Some(parent);
-        self
-    }
-
-    pub fn with_rsrc_lim(mut self, rsrc_lim: Arc<SpinLock<ResourceLimits>>) -> Self {
-        self.rsrc_lim = Some(rsrc_lim);
         self
     }
 

@@ -1,25 +1,22 @@
-use super::{MMIO_BASE, tlb::AllEl1TlbInvalidator};
 use crate::{OnceLock, SpinLock};
 use crate::{
     KernelError,
     KernAddressSpace,
     arch::arm64::memory::{
+        page_allocator::PageTableAllocator,
         pg_descriptors::{MemoryType, PaMapper},
         pg_tables::{L0Table, MapAttributes, MappingContext, PgTableArray, map_range},
         pg_walk::get_pte,
+        MMIO_BASE,
+        page_mapper::PageOffsetPgTableMapper,                
     },
     memory::{
         address::{PA, TPA, VA},
         permissions::PtePermissions,
+        //page_allocator::PageTableAllocator,
         region::{PhysMemoryRegion, VirtMemoryRegion},
     },
 };
-use page_allocator::PageTableAllocator;
-use page_mapper::PageOffsetPgTableMapper;
-
-pub mod page_allocator;
-pub mod page_mapper;
-pub mod smalloc_page_allocator;
 
 pub static KERN_ADDR_SPC: OnceLock<SpinLock<Arm64KernelAddressSpace>> = OnceLock::new();
 

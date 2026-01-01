@@ -32,7 +32,7 @@ trait Translator {
 pub enum Command {
     Get(Oid, Attribute, Value, Variable) = 1,
     Set(Oid, Attribute, Value, Variable) = 2,
-    Copy(Address, Address, u64, Variable) = 3,
+    Copy(Address, Address, usize, Variable) = 3,
     Create(Variable, Variable) = 4,
 }
 
@@ -56,7 +56,7 @@ impl Command {
         r.encode(b);
     }
 
-    pub fn copy(b: &mut Buffer, source: Address, dest: Address, length: u64, r: Variable) {
+    pub fn copy(b: &mut Buffer, source: Address, dest: Address, length: usize, r: Variable) {
         b.write(&[3]);
         source.encode(b);
         dest.encode(b);

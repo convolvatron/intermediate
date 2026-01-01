@@ -5,7 +5,6 @@ use super::{
         L0Descriptor, L1Descriptor, L2Descriptor, L3Descriptor, MemoryType, PaMapper,
         PageTableEntry, TableMapper,
     },
-    tlb::TLBInvalidator,
 };
 use crate::{
     KernelError,
@@ -61,7 +60,7 @@ pub trait PgTable: Clone + Copy {
     fn get_desc(self, va: VA) -> Self::Descriptor;
 
     /// Set the value of the descriptor for a particular VA.
-    fn set_desc(self, va: VA, desc: Self::Descriptor, invalidator: &dyn TLBInvalidator);
+    fn set_desc(self, va: VA, desc: Self::Descriptor);
 }
 
 pub(super) trait TableMapperTable: PgTable<Descriptor: TableMapper> + Clone + Copy {
@@ -127,7 +126,7 @@ macro_rules! impl_pgtable {
                 Self::Descriptor::from_raw(raw)
             }
 
-            fn set_desc(self, va: VA, desc: Self::Descriptor, _invalidator: &dyn TLBInvalidator) {
+            fn set_desc(self, va: VA, desc: Self::Descriptor) {
                 unsafe {
                     self.base
                         .add(Self::pg_index(va))
@@ -231,9 +230,6 @@ where
     /// An implementation of `PageTableMapper` that provides safe, temporary CPU
     /// access to page tables at their physical addresses.
     pub mapper: &'a mut PM,
-    /// An object responsible for issuing TLB invalidation instructions after a
-    /// mapping is successfully changed.
-    pub invalidator: &'a dyn TLBInvalidator,
 }
 
 /// Maps a contiguous physical memory region to a virtual memory region.

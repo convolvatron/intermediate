@@ -1,9 +1,3 @@
-use crate::memory::PAGE_ALLOC;
-
-use super::{
-    mmu::{page_allocator::PageTableAllocator, page_mapper::PageOffsetPgTableMapper},
-    tlb::AllEl0TlbInvalidator,
-};
 use aarch64_cpu::{
     asm::barrier::{ISH, SY, dsb, isb},
     registers::{ReadWriteable, TCR_EL1, TTBR0_EL1},
@@ -12,6 +6,7 @@ use alloc::vec::Vec;
 use crate::{
     PageInfo, UserAddressSpace,
     arch::arm64::memory::{
+        page_allocator::PageTableAllocator, page_mapper::PageOffsetPgTableMapper,
         pg_descriptors::{L3Descriptor, MemoryType, PaMapper, PageTableEntry},
         pg_tables::{
             L0Table, MapAttributes, MappingContext, PageAllocator, PgTableArray, map_range,
@@ -22,6 +17,7 @@ use crate::{
     MapError,
     memory::{
         PAGE_SIZE,
+        PAGE_ALLOC,        
         address::{TPA, VA},
         page::PageFrame,
         permissions::PtePermissions,
@@ -47,7 +43,7 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
     }
 
     fn activate(&self) {
-        let _invalidator = AllEl0TlbInvalidator;
+//        let _invalidator = AllEl0TlbInvalidator;
         TTBR0_EL1.set_baddr(self.l0_table.value() as u64);
         dsb(ISH);
         TCR_EL1.modify(TCR_EL1::EPD0::EnableTTBR0Walks);
@@ -55,7 +51,7 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
     }
 
     fn deactivate(&self) {
-        let _invalidator = AllEl0TlbInvalidator;
+//        let _invalidator = AllEl0TlbInvalidator;
         TCR_EL1.modify(TCR_EL1::EPD0::DisableTTBR0Walks);
         isb(SY);
     }

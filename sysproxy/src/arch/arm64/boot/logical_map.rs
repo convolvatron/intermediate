@@ -1,14 +1,9 @@
-
-use super::super::memory::{
-    fixmap::{FIXMAPS, Fixmap},
-    mmu::smalloc_page_allocator::SmallocPageAlloc,
-    tlb::AllEl1TlbInvalidator,
-};
-
 use crate::{
     KernelError,
     memory::{INITIAL_ALLOCATOR, PageOffsetTranslator},
     arch::arm64::memory::{
+        fixmap::{FIXMAPS, Fixmap},
+        smalloc_page_allocator::SmallocPageAlloc,
         pg_descriptors::MemoryType,
         pg_tables::{
             L0Table, MapAttributes, MappingContext, PageTableMapper, PgTable, PgTableArray,

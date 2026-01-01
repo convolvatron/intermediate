@@ -1,0 +1,6 @@
+const FUNCTION_MAP: &[IntFunction] = &[
+    function_0,
+        function_1,
+            function_2,
+            ];
+

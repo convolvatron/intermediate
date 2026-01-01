@@ -4,9 +4,9 @@ use crate::{
     console,
     arch::arm64::memory::{
         HEAP_ALLOCATOR,
-        mmu::{page_mapper::PageOffsetPgTableMapper, smalloc_page_allocator::SmallocPageAlloc},
+        page_mapper::PageOffsetPgTableMapper,
+        smalloc_page_allocator::SmallocPageAlloc,
         set_kimage_start,
-        tlb::AllEl1TlbInvalidator,            
         pg_descriptors::MemoryType,
         pg_tables::{L0Table, MapAttributes, MappingContext, PgTableArray, map_range},
     },

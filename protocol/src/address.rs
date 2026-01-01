@@ -23,7 +23,7 @@ impl Encodable for Address {
                 Box::new(Encodable::decode(source)?),
                 u64::from_be_bytes(source.read(8)?.try_into().expect("cant")),
             )),
-            x => Err(err!("invalid address {}", x)),
+            x => Err(err!(Oid(1), "invalid address {}", x)),
         }
     }
 }

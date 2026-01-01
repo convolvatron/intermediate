@@ -8,6 +8,10 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    pub fn new() -> Buffer {
+        Buffer{read:0, write:0, body:Vec::new()}
+    }
+
     pub fn read(&mut self, count: usize) -> Result<&[u8], Error> {
         let start = self.read;
         self.read = self.read + count;

@@ -1,13 +1,12 @@
-use alloc::ffi::CString;
-use core::alloc::Layout;
 use crate::{
     error::{KernelError},
     linux::{FileType},
     memory::address::UA,
-    memory::uaccess::copy_to_user_slice,
     linux::Fd,
     current_task,
 };
+use alloc::{ffi::CString, string::String, layout::Layout};
+use protocol::{Buffer, linuxerr, DynEntity, Error};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
@@ -42,6 +41,7 @@ impl From<FileType> for DirentFileType {
 /// This must match the C layout precisely. `#[repr(packed)]` is essential to
 /// remove Rust's default padding and make `size_of` report the correct unpadded
 /// header size (19 bytes).
+/// not sure this is carrying any weight . total length is 19 which pads to 24
 #[repr(C, packed)]
 struct Dirent64Hdr {
     _ino: u64,
@@ -50,75 +50,41 @@ struct Dirent64Hdr {
     _kind: DirentFileType,
 }
 
-pub async fn sys_getdents64(fd: Fd, mut ubuf: UA, size: u32) -> Result<usize, KernelError> {
+fn pad(x:usize, to:usize) {
+    (((x-1)/to)+1)*to;
+}
+
+fn write_dirent(dirent: DynEntity, dest:&[u8]) -> Result<usize, Error> {
+    let name = get_string(dirent, "name");
+    let header_len = core::mem::size_of::<Dirent64Hdr>();
+    let unpadded_len = header_len + name.len();
+    
+    // Userspace expects dirents to always be 8-byte aligned.
+    let padded_reclen = pad(unpadded_len, 8);
+    
+    // If the full, padded entry doesn't fit, stop here for this syscall.
+    if padded_reclen > (size as usize).saturating_sub(bytes_written) {
+        return linuxerr!(LinuxError::EINVAL);        
+    }        
+
+    // le should be parameterizable, but i guess that battle was lost 30 years ago
+    get_u64(dirent, "inode")?.to_le_bytes();
+    kernel_entry_buf[header_len..unpadded_len].copy_from_slice(name);
+    let entry_slice = &kernel_entry_buf[..padded_reclen];
+    // do this incrementally
+    copy_to_user_slice(entry_slice, ubuf).await?;
+    
+    ubuf = ubuf.add_bytes(padded_reclen);
+    bytes_written += padded_reclen;
+}
+
+pub async fn sys_getdents64(fd: Fd, mut ubuf: UA, size: u32) -> Result<usize, Error> {
     let task = current_task();
     let file = task
         .fd_table
         .lock_save_irq()
         .get(fd)
         .ok_or(KernelError::BadFd)?;
-
-    let (ops, ctx) = &mut *file.lock().await;
-
-    let mut entries = file.oid.get();
-
-    let mut bytes_written = 0;
-
-    while let Some(de) = entries.next().await {
-        let c_str_name = CString::new(de.name.clone()).map_err(|_| KernelError::InvalidValue)?;
-        let name_buf = c_str_name.as_bytes_with_nul();
-        let name_len = name_buf.len();
-
-        let header_len = core::mem::size_of::<Dirent64Hdr>();
-        let unpadded_len = header_len + name_len;
-
-        // Userspace expects dirents to always be 8-byte aligned.
-        let padded_reclen = Layout::from_size_align(unpadded_len, 8)
-            .unwrap()
-            .pad_to_align()
-            .size();
-
-        // If the full, padded entry doesn't fit, stop here for this syscall.
-        if padded_reclen > (size as usize).saturating_sub(bytes_written) {
-            break;
-        }
-
-        // The dirent fits,  consume this peeked dirent.
-        let consumed_de = entries_iter.next().await?.unwrap();
-        let current_pos = consumed_de.offset;
-
-        let mut kernel_entry_buf = [0u8; 512];
-        let buf_ptr = kernel_entry_buf.as_mut_ptr();
-
-        unsafe {
-            // Write ino (u64) at offset 0
-            (buf_ptr as *mut u64).write_unaligned(consumed_de.id.inode_id());
-
-            // Write off (u64) at offset 8.
-            (buf_ptr.add(8) as *mut u64).write_unaligned(current_pos as u64);
-
-            // Write reclen (u16) at offset 16
-            (buf_ptr.add(16) as *mut u16).write_unaligned(padded_reclen as u16);
-
-            // Write kind (u8) at offset 18
-            let de_filetype: DirentFileType = consumed_de.file_type.into();
-            buf_ptr.add(18).write(de_filetype as u8);
-        }
-
-        kernel_entry_buf[header_len..unpadded_len].copy_from_slice(name_buf);
-
-        let entry_slice = &kernel_entry_buf[..padded_reclen];
-        copy_to_user_slice(entry_slice, ubuf).await?;
-
-        ubuf = ubuf.add_bytes(padded_reclen);
-        bytes_written += padded_reclen;
-    }
-
-    // If we didn't write any bytes but there were unprocessed directory
-    // entries, that's an error.
-    if bytes_written == 0 && entries_iter.peek().is_some() {
-        Err(KernelError::InvalidValue)
-    } else {
-        Ok(bytes_written)
-    }
+    let b = Buffer::new();
+    Ok(0)
 }

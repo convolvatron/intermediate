@@ -8,11 +8,13 @@ mod buffer;
 mod command;
 mod memory;
 mod value;
+pub mod syserr;
 
 pub use address::*;
 pub use buffer::*;
 pub use command::*;
 pub use value::*;
+pub use syserr::*;
 //pub use memory::*;
 
 pub struct Error {
@@ -22,9 +24,17 @@ pub struct Error {
 }
 
 #[macro_export]
+macro_rules! attr {
+    ($sattr:expr) => {
+        Attribute($sattr.to_string())
+    }
+}
+
+    
+#[macro_export]
 macro_rules! err {
-    ($($arg:tt)*) => {
-        crate::Error{cause:crate::format!($($arg)*), location:Oid(1)}
+    ($oid:expr, $($arg:tt)*) => {
+        crate::Error{cause:crate::format!($($arg)*), location:$oid}
     }
 }
 
@@ -40,7 +50,7 @@ pub fn new_object() -> Oid {
 
 type ChangeSet = alloc::vec::Vec<(Attribute, Value)>;
 
-type DynEntity = Arc<dyn Entity>;
+pub type DynEntity = Arc<dyn Entity>;
 pub trait Entity {
     fn keys(&self) -> alloc::vec::Vec<Attribute>;
     fn get(&self, a: Attribute) -> Result<Value, Error>;
@@ -51,8 +61,7 @@ pub trait Entity {
 }
 
 // there a whole .. allocation and routing thing that would have to be built. this is our
-// silly placeholder
-
-const TARGET: Oid = Oid(1000);
-const SYSPROXY: Oid = Oid(1000);
-const MONITOR: Oid = Oid(1000);
+// silly placeholder. 
+const TARGET: Oid = Oid(0x10000000000000000000000000000000);
+const SYSPROXY: Oid = Oid(0x20000000000000000000000000000000);
+const MONITOR: Oid = Oid(0x30000000000000000000000000000000);

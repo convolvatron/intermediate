@@ -156,7 +156,7 @@ extern "C" fn el0_sync(state_ptr: *mut ExceptionState) -> *const ExceptionState 
             handle_mem_fault(exception, info);
         }
         Exception::SVC64(_) => {
-            spawn_kernel_work(handle_syscall());
+            handle_syscall();
         }
         Exception::TrappedFP(_) => {
             CPACR_EL1.modify(CPACR_EL1::FPEN::TrapNothing);
@@ -166,7 +166,7 @@ extern "C" fn el0_sync(state_ptr: *mut ExceptionState) -> *const ExceptionState 
         _ => default_handler(state),
     }
 
-    dispatch_userspace_task(state_ptr);
+//    dispatch_userspace_task(state_ptr);
 
     state_ptr
 }
@@ -183,7 +183,7 @@ extern "C" fn el0_irq(state: *mut ExceptionState) -> *mut ExceptionState {
         ),
     }
 
-    dispatch_userspace_task(state);
+    //dispatch_userspace_task(state);
 
     state
 }

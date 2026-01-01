@@ -1,7 +1,6 @@
 use super::{
     pg_descriptors::{L3Descriptor, PageTableEntry, TableMapper},
     pg_tables::{L0Table, L3Table, PageTableMapper, PgTable, PgTableArray, TableMapperTable},
-    tlb::{NullTlbInvalidator, TLBInvalidator},
 };
 use crate::{
     KernelError,
@@ -19,7 +18,7 @@ where
     PM: PageTableMapper + 'a,
 {
     pub mapper: &'a mut PM,
-    pub invalidator: &'a dyn TLBInvalidator,
+//    pub invalidator: &'a dyn TLBInvalidator,
 }
 
 trait RecursiveWalker: PgTable + Sized {
@@ -161,7 +160,7 @@ pub fn get_pte<PM: PageTableMapper>(
     let mut walk_ctx = WalkContext {
         mapper,
         // Safe to not invalidate the TLB, as we are not modifying any PTEs.
-        invalidator: &NullTlbInvalidator {},
+//        invalidator: &NullTlbInvalidator {},
     };
 
     walk_and_modify_region(

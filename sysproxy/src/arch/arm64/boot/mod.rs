@@ -7,7 +7,7 @@ use crate::{
     arch::arm64::memory::pg_tables::{L0Table, PgTableArray},    
     KernelError,
     interrupts::{
-        cpu_messenger::{Message, cpu_messenger_init, message_cpu},
+        // cpu_messenger::{Message, cpu_messenger_init, message_cpu},
         get_interrupt_root,
     },
     CpuOps,
@@ -82,7 +82,7 @@ fn arch_init_stage1(
         };
         console!("C\n");
 
-        set_fdt_va(dtb_addr.cast());
+        // set_fdt_va(dtb_addr.cast());
         setup_logical_map(highmem_pgtable_base)?;
         let stack_addr = setup_stack_and_heap(highmem_pgtable_base)?;
         setup_kern_addr_space(highmem_pgtable_base)?;
@@ -120,19 +120,18 @@ fn arch_init_stage2(frame: *mut ExceptionState) -> *mut ExceptionState {
     exceptions_init().expect("Failed to initialize exceptions");
     ArchImpl::enable_interrupts();
 
-    unsafe { run_initcalls() };
-//    probe_for_fdt_devices();
-
+    //    unsafe { run_initcalls() };
+    //    probe_for_fdt_devices();
     //    cpu_count())
     unsafe { setup_percpu(1) };
 
-    cpu_messenger_init(cpu_count());
+    cpu_messenger_init(1);
 
     kmain(
         frame,
     );
 
-    boot_secondaries();
+    // boot_secondaries();
 
     // Prove that we can send IPIs through the messenger.
     let _ = message_cpu(1, Message::Ping(ArchImpl::id() as _));
@@ -158,7 +157,7 @@ fn arch_init_secondary(ctx_frame: *mut ExceptionState) -> *mut ExceptionState {
 
 //    sched_init_secondary();
 
-    dispatch_userspace_task(ctx_frame);
+    // dispatch_userspace_task(ctx_frame);
 
     ctx_frame
 }

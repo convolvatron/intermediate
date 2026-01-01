@@ -10,7 +10,6 @@ use crate::{
             ExceptionState,
             esr::{AbortIss, Exception, IfscCategory},
         },
-        memory::uaccess::{UACESS_ABORT_DEFERRED, UACESS_ABORT_DENIED},
     },
     memory::fault::{FaultResolution, handle_demand_fault, handle_protection_fault},
 };
@@ -60,34 +59,6 @@ fn run_mem_fault_handler(exception: Exception, info: AbortIss) -> Result<FaultRe
     }
 }
 
-fn handle_uacess_abort(exception: Exception, info: AbortIss, state: &mut ExceptionState) {
-    match run_mem_fault_handler(exception, info) {
-        // We mapped in a page, the uacess handler can proceed.
-        Ok(FaultResolution::Resolved) => (),
-        // If the fault coldn't be resolved, signal to the uacess fixup that
-        // the abort failed.
-        Ok(FaultResolution::Denied) => {
-            state.x[0] = UACESS_ABORT_DENIED;
-            state.elr_el1 = unsafe { __UACCESS_FIXUP.fixup.value() as u64 };
-        }
-        // If the page fault involves sleepy kernel work, we send that work
-        // over to the uacess future for it to then await it.
-        Ok(FaultResolution::Deferred(fut)) => {
-            let ptr = Box::into_raw(fut);
-
-            // A fat pointer is guaranteed to be a (data_ptr, vtable_ptr)
-            // pair. Transmute it into a tuple of thin pointers to get the
-            // components.
-            let (data_ptr, vtable_ptr): (*mut (), *const ()) = unsafe { mem::transmute(ptr) };
-
-            state.x[0] = UACESS_ABORT_DEFERRED;
-            state.x[1] = data_ptr as _;
-            state.x[3] = vtable_ptr as _;
-            state.elr_el1 = unsafe { __UACCESS_FIXUP.fixup.value() as u64 };
-        }
-        Err(_) => panic!("Page fault handler error, SIGBUS on process"),
-    }
-}
 
 pub fn handle_kernel_mem_fault(exception: Exception, info: AbortIss, state: &mut ExceptionState) {
     if unsafe { __UACCESS_FIXUP.is_in_fixup(VA::from_value(state.elr_el1 as usize)) } {
@@ -114,11 +85,13 @@ pub fn handle_mem_fault(exception: Exception, info: AbortIss) {
         // If the page fault involves sleepy kernel work, we can
         // spawn that work on the process, since there is no other
         // kernel work happening.
+        /*
         Ok(FaultResolution::Deferred(fut)) => spawn_kernel_work(async {
             if Box::into_pin(fut).await.is_err() {
                 panic!("Page fault defered error, SIGBUS on process");
             }
-        }),
+    }),
+        */
         Err(_) => panic!("Page fault handler error, SIGBUS on process"),
     }
 }

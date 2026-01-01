@@ -8,9 +8,7 @@
 //! The rest of the kernel should use the `ArchImpl` type alias to access
 //! architecture-specific functions and types.
 
-use alloc::sync::Arc;
 use crate::{
-    task::Task,
     KernelError,
     CpuOps, VirtualMemory,
     memory::address::{UA, VA},
@@ -28,14 +26,6 @@ pub trait Arch: CpuOps + VirtualMemory {
     /// the stack frame so that when we context-switch to it, it will begin
     /// execution at the specified `entry_point`.
     fn new_user_context(entry_point: VA, stack_top: VA) -> Self::UserContext;
-
-    // scheduled for demolition
-    /// Switch the current CPU's context to `new`, setting `new` to be the next
-    /// task to be executed.
-    fn context_switch(new: Arc<Task>);
-
-    /// Powers off the machine. Implementations must never return.
-    fn power_off() -> !;
 
     /// Copies a block of memory from userspace to the kernel.
     ///

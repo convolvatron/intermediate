@@ -1,11 +1,9 @@
 
-use protocol::{Oid, Entity, Attribute, Value};
+use protocol::{Oid, DynEntity};
 
 use crate::{
     Context,
     per_cpu,
-    Instant,
-    PathBuf,
     RobustListHead,
     arch::{Arch, ArchImpl},
     sync::SpinLock,
@@ -29,6 +27,76 @@ use alloc::{
     collections::btree_map::BTreeMap,
     sync::{Arc, Weak},
 };
+
+pub struct Task {
+    pub tid: Tid,
+    pub process: Arc<ThreadGroup>,
+    pub vm: Arc<SpinLock<ProcVM>>,
+    pub process_root: DynEntity,
+    // inodes can have multiple valid paths, so we keep the one the user traversed
+    // to get here, and keep it with the inode so that we can update them both atomically
+    pub root:Oid,
+    pub myself:Oid,
+    pub cwd: Arc<SpinLock<(Oid, String)>>,
+    pub creds: SpinLock<Credentials>,
+    pub fd_table: Arc<SpinLock<FileDescriptorTable>>,
+    pub ctx: SpinLock<Context>,
+    pub state: Arc<SpinLock<TaskState>>,
+    pub robust_list: SpinLock<Option<TUA<RobustListHead>>>,
+}
+
+impl Task {
+    pub fn new(working: Oid) -> Self {
+        Self {
+            tid: Tid(1),
+            process: ThreadGroupBuilder::new(Tgid::init()).build(),
+            state: Arc::new(SpinLock::new(TaskState::Runnable)),
+            cwd: Arc::new(SpinLock::new((working, PathBuf::new()))),
+            creds: SpinLock::new(Credentials::new_root()),
+            vm: Arc::new(SpinLock::new(
+                ProcessVM::empty().expect("Could not create init process's VM"),
+            )),
+            fd_table: Arc::new(SpinLock::new(FileDescriptorTable::new())),
+            pending_signals: SpinLock::new(SigSet::empty()),
+            vruntime: SpinLock::new(0),
+            exec_start: SpinLock::new(None),
+            deadline: SpinLock::new(None),
+            sig_mask: SpinLock::new(SigSet::empty()),
+            priority: 0,
+            ctx: SpinLock::new(Context::from_user_ctx(
+                <ArchImpl as Arch>::new_user_context(VA::null(), VA::null()),
+            )),
+            last_run: SpinLock::new(None),
+            robust_list: SpinLock::new(None),
+        }
+    }
+
+    pub fn priority(&self) -> i8 {
+        self.priority
+    }
+
+    pub fn set_priority(&mut self, priority: i8) {
+        self.priority = priority;
+    }
+
+    pub fn pgid(&self) -> Tgid {
+        self.process.tgid
+    }
+
+    pub fn tid(&self) -> Tid {
+        self.tid
+    }
+
+    /// Return a new desctiptor that uniquely represents this task in the
+    /// system.
+    pub fn descriptor(&self) -> TaskDescriptor {
+        TaskDescriptor::from_tgid_tid(self.process.tgid, self.tid)
+    }
+
+//    pub fn raise_task_signal(&self, signal: SigId) {
+//        self.pending_signals.lock_save_irq().insert(signal.into());
+//    }
+}
 
 // Thread Id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -110,79 +178,6 @@ impl TaskState {
 }
 pub type ProcVM = ProcessVM<<ArchImpl as VirtualMemory>::ProcessAddressSpace>;
 
-pub struct Task {
-    pub tid: Tid,
-    pub process: Arc<ThreadGroup>,
-    pub vm: Arc<SpinLock<ProcVM>>,
-    // inodes can have multiple valid paths, so we keep the one the user traversed
-    // to get here, and keep it with the inode so that we can update them both atomically
-    pub cwd: Arc<SpinLock<(Oid, String)>>,
-    pub creds: SpinLock<Credentials>,
-    pub fd_table: Arc<SpinLock<FileDescriptorTable>>,
-    pub ctx: SpinLock<Context>,
-//    pub sig_mask: SpinLock<SigSet>,
-//    pub pending_signals: SpinLock<SigSet>,
-    pub vruntime: SpinLock<u64>,
-    pub exec_start: SpinLock<Option<Instant>>,
-    pub deadline: SpinLock<Option<Instant>>,
-    pub priority: i8,
-    pub last_run: SpinLock<Option<Instant>>,
-    pub state: Arc<SpinLock<TaskState>>,
-    pub robust_list: SpinLock<Option<TUA<RobustListHead>>>,
-}
-
-impl Task {
-    pub fn new(working: Oid) -> Self {
-        Self {
-            tid: Tid(1),
-            process: ThreadGroupBuilder::new(Tgid::init()).build(),
-            state: Arc::new(SpinLock::new(TaskState::Runnable)),
-            cwd: Arc::new(SpinLock::new((working, PathBuf::new()))),
-            creds: SpinLock::new(Credentials::new_root()),
-            vm: Arc::new(SpinLock::new(
-                ProcessVM::empty().expect("Could not create init process's VM"),
-            )),
-            fd_table: Arc::new(SpinLock::new(FileDescriptorTable::new())),
-            pending_signals: SpinLock::new(SigSet::empty()),
-            vruntime: SpinLock::new(0),
-            exec_start: SpinLock::new(None),
-            deadline: SpinLock::new(None),
-            sig_mask: SpinLock::new(SigSet::empty()),
-            priority: 0,
-            ctx: SpinLock::new(Context::from_user_ctx(
-                <ArchImpl as Arch>::new_user_context(VA::null(), VA::null()),
-            )),
-            last_run: SpinLock::new(None),
-            robust_list: SpinLock::new(None),
-        }
-    }
-
-    pub fn priority(&self) -> i8 {
-        self.priority
-    }
-
-    pub fn set_priority(&mut self, priority: i8) {
-        self.priority = priority;
-    }
-
-    pub fn pgid(&self) -> Tgid {
-        self.process.tgid
-    }
-
-    pub fn tid(&self) -> Tid {
-        self.tid
-    }
-
-    /// Return a new desctiptor that uniquely represents this task in the
-    /// system.
-    pub fn descriptor(&self) -> TaskDescriptor {
-        TaskDescriptor::from_tgid_tid(self.process.tgid, self.tid)
-    }
-
-//    pub fn raise_task_signal(&self, signal: SigId) {
-//        self.pending_signals.lock_save_irq().insert(signal.into());
-//    }
-}
 
 pub static TASK_LIST: SpinLock<BTreeMap<TaskDescriptor, Weak<SpinLock<TaskState>>>> =
     SpinLock::new(BTreeMap::new());
@@ -195,18 +190,9 @@ per_cpu! {
 }
 
 pub fn current_task() -> Task {
-    CURRENT_TASK.clone()
-}
-
-
-pub struct TaskTable {
-}
-
-impl Entity for TaskTable {
-    fn keys() -> alloc::vec::Vec<Attribute> {
-    }
-    fn get(a:Attribute) -> Value {
-    }
-    fn set(a:Attribute, v:Value) {
+    if let Some(t) =   CURRENT_TASK {
+        t.clone()
+    } else {
+        panic!("foo")
     }
 }

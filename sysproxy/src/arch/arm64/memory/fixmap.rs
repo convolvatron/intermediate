@@ -1,4 +1,3 @@
-use super::{FIXMAP_BASE, tlb::AllEl1TlbInvalidator};
 use crate::{arch::arm64::fdt::MAX_FDT_SZ, ksym_pa, SpinLock};
 use core::{
     ops::{Deref, DerefMut},
@@ -6,6 +5,7 @@ use core::{
 };
 use crate::{
     arch::arm64::memory::{
+        FIXMAP_BASE,         
         pg_descriptors::{
             L0Descriptor, L1Descriptor, L2Descriptor, L3Descriptor, MemoryType, PaMapper,
             PageTableEntry, TableMapper,

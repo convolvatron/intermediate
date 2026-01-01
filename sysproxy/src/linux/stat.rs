@@ -1,3 +1,8 @@
+use super::at::stat::Stat;
+use crate::memory::uaccess::copy_to_user;
+use crate::{linux::Fd, current_task};
+use crate::{error::KernelError, memory::address::TUA};
+
 use crate::{
     KernelError,
     linux::{FileType, attr::FileAttr, path::Path},
@@ -58,8 +63,8 @@ impl From<FileAttr> for Stat {
         };
 
         Self {
-            st_dev: value.id.fs_id(),
-            st_ino: value.id.inode_id(),
+            st_dev: value.id,
+            st_ino: value.id,
             st_mode: value.mode.bits() as u32 | type_val,
             st_nlink: value.nlinks,
             st_uid: value.uid.into(),
@@ -92,5 +97,21 @@ pub async fn sys_newfstatat(
 
     let _flags = AtFlags::from_bits_truncate(flags);
     let _path = Path::new(UserCStr::from_ptr(path).copy_from_user(&mut buf).await?);
+    Ok(0)
+}
+
+pub async fn sys_fstat(fd: Fd, statbuf: TUA<Stat>) -> Result<usize, KernelError> {
+    let fd = current_task()
+        .fd_table
+        .lock_save_irq()
+        .get(fd)
+        .ok_or(KernelError::BadFd)?;
+
+    let inode = fd.inode().ok_or(KernelError::BadFd)?;
+
+    let attr = inode.getattr().await?;
+
+    copy_to_user(statbuf, attr.into()).await?;
+
     Ok(0)
 }

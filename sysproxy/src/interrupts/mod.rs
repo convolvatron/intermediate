@@ -6,7 +6,7 @@ use alloc::{
 use crate::KernelError;
 use crate::{OnceLock, SpinLock};
 
-pub mod cpu_messenger;
+//pub mod cpu_messenger;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TriggerMode {
@@ -161,14 +161,15 @@ impl InterruptManager {
         let inner = self.inner.lock_save_irq();
         inner.controller.lock_save_irq().raise_ipi(cpu);
     }
-
+/*
     pub fn enable_core(&self, cpu_id: usize) {
         self.inner
             .lock_save_irq()
             .controller
             .lock_save_irq()
             .enable_core(cpu_id);
-    }
+}
+    */
 }
 
 #[derive(Clone)]

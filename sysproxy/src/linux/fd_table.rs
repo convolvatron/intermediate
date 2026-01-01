@@ -1,10 +1,8 @@
-use protocol::Oid;
+use protocol::{Oid, Error, err};
 use crate::{memory::uaccess::UserCopyable,
             OpenFlags,
-            error::FsError,
-            KernelError,
 };
-use alloc::{vec::Vec};
+use alloc::{vec::Vec, sync::Arc};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -67,8 +65,17 @@ impl FileDescriptorTable {
             next_fd_hint: 0,
         }
     }
+    
+    /// Gets the file object associated with a given file descriptor.
+    pub fn get(&self, fd: Fd) -> Option<Arc<FileDescriptorEntry>> {
+        self.entries
+            .get(fd.0 as usize)
+            .and_then(|entry| entry.as_ref())
+            .map(|entry| entry.file.clone())
+    }
+
     /// Inserts a new file into the table, returning the new file descriptor.
-    pub fn insert(&mut self, obj: Oid, oflags:OpenFlags) -> Result<Fd, KernelError> {
+    pub fn insert(&mut self, obj: Oid, oflags:OpenFlags) -> Result<Fd, Error> {
         let fd = self.find_free_fd()?;
 
         let entry = FileDescriptorEntry {
@@ -134,7 +141,7 @@ impl FileDescriptorTable {
     }
 
     /// Finds the lowest-numbered available file descriptor.
-    fn find_free_fd(&mut self) -> Result<Fd, KernelError> {
+    fn find_free_fd(&mut self) -> Result<Fd, Error> {
         // Start searching from our hint.
         for i in self.next_fd_hint..self.entries.len() {
             if self.entries[i].is_none() {
@@ -147,7 +154,8 @@ impl FileDescriptorTable {
         let next = self.entries.len();
 
         if next >= MAX_FDS {
-            Err(FsError::TooManyFiles.into())
+            // this should be in the process context
+            Err(err!(protocol::Value::Oid(1), "too many files"))
         } else {
             self.next_fd_hint = next + 1;
             Ok(Fd(next as i32))

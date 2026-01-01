@@ -22,7 +22,8 @@ pub use error::*;
 pub use linux::*;
 pub use ctx::*;
 
-//use crate::uspc_ret::dispatch_userspace_task;
+pub use protocol::{Error, err, Buffer};
+pub use alloc::format;
 
 
 
@@ -33,14 +34,12 @@ pub struct Instant {
     freq: u64,
 }
 
-#[macro_use]
+#[macro_export]
 macro_rules! console {
     ($($msg:tt)*) => {
         crate::arch::arm64::boot::console_output(format_args!($($msg)*).as_str().unwrap())
     }
 }
-
-pub(crate) use console;    
 
 async fn launch_init() {
 //    let dt = get_fdt();
@@ -61,9 +60,11 @@ async fn launch_init() {
 
 // find a better home
 /// Returns the current instant, if the system timer has been initialised.
+/*
 pub fn now() -> Instant {
     SYS_TIMER.get().map(|timer| timer.driver.now())
 }
+ */
 
 // sysproxy object:
 //   filesystem root
@@ -72,4 +73,8 @@ pub fn kmain(ctx_frame: *mut UserCtx) {
 //    spawn_kernel_work(launch_init());
     //    dispatch_userspace_task(ctx_frame)
     loop{}
+}
+
+pub fn execute(b: Buffer) -> Result<(), Error> {
+    // hsvc!
 }
