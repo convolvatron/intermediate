@@ -2,6 +2,7 @@
 \usepackage[left=2.5cm,right=2.5cm,top=2.0cm,bottom=2.5cm]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
+
 \graphicspath{.}
 \title{System Call Proxy Protocol}
 \begin{document}
@@ -75,13 +76,54 @@ schema definition to publish known keys and support validation.
 \subsection{Values}
 
 \section{Schema}
+The invariable endpoint of an ad-hoc embedding (like unix into
+triples) is a kind of loss of design cohesion. Some parts of the shape
+are deprecated but perhaps some usages are still maintained for
+convenience. For some reason one ends up with two canonical idenfiers
+for the same logical object and has to choose between several ugly
+alternatives to map between them. Objects are given multiple oids,
+etc.
+
+One way of exerting some control on this evolution is to introduce
+schema for the data. This at least attempts to describe the shapes
+that are valid, serves as a form documentation, allows
+incompatibilities in usage to be caught at compile time, or startup
+time, and lots of other structural benefits. It would also be lovely
+if we could include additional metadata in the schema, for example
+allowing tools to know that they can join through a particular attribute
+to get a useful printable name for an object.
+
+Since everything is stored and communicated as triples, the schema
+should be reflexive, that is objects are instances of schema, which
+are objects that are instances of the metaschema, which is a single
+schea-object. [I recently saw reference to a paper that shows that
+  this arrangement leads to decidability problems. i should really
+  find and read that].
+
+Unfortunately this means designing a small type system, expressing it
+in itself, and writing it up here. The primary usage will be the
+declaration of objects, meaning their attributes and the types that
+the corresponding values can be elements of. Certainly need to support
+optional fields.
+
+Additionally we would like the attribute to be any member of some
+type, where all of their values are of the same type
+(i.e. Hash<K,V>). This is used in directories
+\verb!(String -> {File  | Directory})!,
+and extent maps including virtual memory
+translations \verb!(u64 -> Extent)!.
+
 
 \section{Commands}
 
-\subsection{set(entity, attribute, value)}
-\subsection{get(entity, attribute, value)}
-\subsection{copy(dest, source, length)}
-\subsection{create(dest, source, length)}
+\subsection{set(entity:Oid, attribute:Value, value:Value, status:Object)}
+
+\subsection{get(entity:Oid, attribute:VAlue, value:Value, result:Variable)}
+status here?
+
+\subsection{copy(dest:Address, source:Address, length:usize, status:Object)}
+
+\subsection{create(dest:Variable, source, length)}
 
 Copies {\em length} bytes from the {\em source} bytestring to the {\em dest}. It
 is an error if both the referred objects are not byte strings. For convenience if
@@ -151,7 +193,7 @@ runtime. So we can express a general copy from A to B where variables are denote
   We generalize the binding of variables to include multiple values. In logic we would
   say that variables are universally qualified rather than existentially. In programming we
   would say that every command contains an implicit {\tt forall} loop around it. Variables are
-  all initialized to to the universe of all values (\textfrac{U} or $\top$).
+  all initialized to to the universe of all values (U or $\top$).
 
   At each step in the evalution, constants are treated as unit sets, and for variables
   we take the intersection of the current value with the valid values that that variable
@@ -167,8 +209,10 @@ runtime. So we can express a general copy from A to B where variables are denote
   set B %1 %2
 \end{verbatim}  
 
-For convenience, we define operations on {\tt %%0} to be the union rather than the intersection. Since
-a starts out as $\fracmath{U}$, this becomes '\_' or a 'dont care' argument.
+We would also define operations on variables} to be the union rather
+than the intersection in some cases. The collection of a set errors
+is notable one. Its not clear if this should be by command slot, or some
+additional dynamic notation in the application, or...
   
 \subsection{Results/Continuations}
 We've painted a picture of an evaluation tree, where we can split work if its worthwhile to do
@@ -179,8 +223,27 @@ that
   
 \subsection{Error handling}
 
+Three of the four (set, get, copy) commands take a result or
+status. Exactly how this gets expressed is somewhat up to the
+evolution of the type system. The intent is to have Error objects with
+fairly substantial metadata, and some convenince functions to generate
+them. This is necessary in a very decentralized distributed system in
+order to identify which software compoents failed, and on what
+machines, and importantly to correlate the error with a particular
+distributed evaluation. By the same rationale, the need to be
+structural because they will be processed by software.
 
+Now that we've imposed alot of semantics onto the error, we can also
+exploit them to good end. It should be possible to enable the
+embedding of timing and other performance information into
+status/error objects. Oids which identify a particular process can be
+later used to run queries on things like age, binary provenance,
+memory utilization, identifiers for attached storage hardware, etc.
 
+The syscall proxy and posix services need to agree on a canonical errno
+description, be prepared to attempt to map the local environment to the
+canonical, and include that information explicitly in status objects
+relayed as part of a syscall.
 
 \section{Concurrency}
 
