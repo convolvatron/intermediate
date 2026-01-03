@@ -41,7 +41,7 @@ macro_rules! err {
 }
 
 #[macro_export]
-macro_rules! out_of_memory! {
+macro_rules! out_of_memory {
     () => {
         crate::Error{cause:"out of memory".to_string(), location:Oid(1), syserr: None}
     }
@@ -74,3 +74,11 @@ pub trait Entity {
 const TARGET: Oid = Oid(0x10000000000000000000000000000000);
 const SYSPROXY: Oid = Oid(0x20000000000000000000000000000000);
 const MONITOR: Oid = Oid(0x30000000000000000000000000000000);
+
+
+pub type DynStream<A> = Arc<dyn Stream<A>>;
+#[async_trait]
+trait Stream<A> {
+    async fn next(&self) -> Option<A>;
+}
+

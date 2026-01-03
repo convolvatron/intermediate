@@ -1,4 +1,4 @@
-use crate::{Buffer, Error, err, DynEntity};
+use crate::{Buffer, Error, err, DynEntity, DynStream};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
@@ -92,3 +92,7 @@ pub fn get_u64(_e:DynEntity, _a:Attribute) -> Result<u64, Error>{
 pub fn get_string(_e:DynEntity, _a:Attribute) -> Result<String, Error>{
     Ok("just kidding".to_string())
 }
+
+pub fn get_stream(_e:DynEntity, _a:Attribute) -> Result<DynStream<Value>, Error> {
+}
+

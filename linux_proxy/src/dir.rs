@@ -53,7 +53,7 @@ fn pad(x:usize, to:usize) -> usize{
     (((x-1)/to)+1)*to
 }
 
-fn write_dirent(dirent: DynEntity, dest:&[u8]) -> Result<usize, Error> {
+fn write_dirent(dirent: DynEntity, dest:Buffer) -> Result<usize, Error> {
     let name = get_string(dirent, "name");
     let header_len = core::mem::size_of::<Dirent64Hdr>();
     
@@ -75,11 +75,16 @@ fn write_dirent(dirent: DynEntity, dest:&[u8]) -> Result<usize, Error> {
 
 pub async fn sys_getdents64(fd: Fd, mut ubuf: UA, size: u32) -> Result<usize, Error> {
     let task = current_task();
-    let _file = task
+    let file = task
         .fd_table
         .lock_save_irq()
         .get(fd)
         .ok_or(linuxerr!(EBADF))?;
     let b = Buffer::new();
+    let st = get_stream(file.obj, attribute!("children"));
+    while let Some(t) = st.next() {
+        write_dirent(t, b);
+    }
+    
     Ok(0)
 }

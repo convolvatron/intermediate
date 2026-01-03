@@ -1,0 +1,23 @@
+ok, the basic problem with doing files this way (which NFS shares) is
+that we'd like to export an inode equivalent, and we have enough bits in the
+OIS to actually pass it back and forth, just the like the filehandle.
+
+this is necessary to preserve filesystem semantics because once we
+have an open file, that binding from fd->inode doesn't go away when
+the path changes.  one can imagine all kinds of inconsistencies with
+expectations that arise as we move files around and replace them, and
+add and remove hardlinks.
+
+however, posix doesn't give us a way to address files by inode directly.
+NFS gets around this by having a presence in the kernel. So this basically
+means that we're going to need to keep state about all of the files that
+we hand out OIDs for. This is problematics for several reasons:
+
+ a) we still aren't really tracking by inode
+ b) we are trying to avoid having a stateful open
+ c) protocol peers are impacted by service restarts and load shifting activies
+
+ultimately the answer should be that the service lives in the kernel. this saves
+a bunch of work also. so, for the moment we're just going to pretend that
+the situation is fine.
+

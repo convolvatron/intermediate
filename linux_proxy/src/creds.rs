@@ -96,7 +96,7 @@ pub async fn sys_getresuid(_ruid: TUA<Uid>, _euid: TUA<Uid>, _suid: TUA<Uid>) ->
 }
 
 pub async fn sys_getresgid(rgid: TUA<Gid>, egid: TUA<Gid>, sgid: TUA<Gid>) -> Result<usize, Error> {
-    let _task = current_task();
+    let task = current_task();
     let _creds = task.creds.lock_save_irq().clone();
 
 /*    copy_to_user(rgid, creds.gid).await?;
