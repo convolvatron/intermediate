@@ -1,9 +1,9 @@
-use crate::KernelError;
+use protocol::{Error};
 use crate::arch::{Arch, ArchImpl};
 use alloc::boxed::Box;
 use core::{pin::Pin, ptr};
 
-pub type SignalWork = Pin<Box<dyn Future<Output = Result<UserCtx, KernelError>>>>;
+pub type SignalWork = Pin<Box<dyn Future<Output = Result<UserCtx, Error>>>>;
 pub type KernelWork = Pin<Box<dyn Future<Output = ()>>>;
 pub type UserCtx = <ArchImpl as Arch>::UserContext;
 

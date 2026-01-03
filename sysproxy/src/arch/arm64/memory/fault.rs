@@ -1,7 +1,5 @@
-use core::mem;
-
+use protocol::{Error};
 use crate::{
-    KernelError,
     current_task,
     UserAddressSpace,
     memory::{address::VA, proc_vm::vmarea::AccessKind, region::VirtMemoryRegion},    
@@ -13,7 +11,6 @@ use crate::{
     },
     memory::fault::{FaultResolution, handle_demand_fault, handle_protection_fault},
 };
-use alloc::boxed::Box;
 
 #[repr(C)]
 struct FixupTable {
@@ -32,7 +29,7 @@ impl FixupTable {
     }
 }
 
-fn run_mem_fault_handler(exception: Exception, info: AbortIss) -> Result<FaultResolution, KernelError> {
+fn run_mem_fault_handler(exception: Exception, info: AbortIss) -> Result<FaultResolution, Error> {
     let access_kind = determine_access_kind(exception, info);
 
     if let Some(far) = info.far {
@@ -61,11 +58,11 @@ fn run_mem_fault_handler(exception: Exception, info: AbortIss) -> Result<FaultRe
 
 
 pub fn handle_kernel_mem_fault(exception: Exception, info: AbortIss, state: &mut ExceptionState) {
-    if unsafe { __UACCESS_FIXUP.is_in_fixup(VA::from_value(state.elr_el1 as usize)) } {
+/*    if unsafe { __UACCESS_FIXUP.is_in_fixup(VA::from_value(state.elr_el1 as usize)) } {
         handle_uacess_abort(exception, info, state);
         return;
     }
-
+*/
     // If the source of the fault (ELR), wasn't in the uacess fixup section,
     // then any abort genereated by the kernel is a panic since we don't
     // demand-page any kernel memory.

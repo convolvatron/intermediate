@@ -46,37 +46,29 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn new(working: Oid) -> Self {
+    pub fn new(cwd: Oid) -> Self {
         Self {
             tid: Tid(1),
             process: ThreadGroupBuilder::new(Tgid::init()).build(),
             state: Arc::new(SpinLock::new(TaskState::Runnable)),
-            cwd: Arc::new(SpinLock::new((working, PathBuf::new()))),
+            cwd: Arc::new(SpinLock::new((cwd, PathBuf::new()))),
             creds: SpinLock::new(Credentials::new_root()),
             vm: Arc::new(SpinLock::new(
                 ProcessVM::empty().expect("Could not create init process's VM"),
             )),
             fd_table: Arc::new(SpinLock::new(FileDescriptorTable::new())),
-            pending_signals: SpinLock::new(SigSet::empty()),
-            vruntime: SpinLock::new(0),
-            exec_start: SpinLock::new(None),
-            deadline: SpinLock::new(None),
-            sig_mask: SpinLock::new(SigSet::empty()),
-            priority: 0,
+            //pending_signals: SpinLock::new(SigSet::empty()),
+            //vruntime: SpinLock::new(0),
+            //exec_start: SpinLock::new(None),
+            //deadline: SpinLock::new(None),
+            //sig_mask: SpinLock::new(SigSet::empty()),
+            //priority: 0,
             ctx: SpinLock::new(Context::from_user_ctx(
                 <ArchImpl as Arch>::new_user_context(VA::null(), VA::null()),
             )),
             last_run: SpinLock::new(None),
             robust_list: SpinLock::new(None),
         }
-    }
-
-    pub fn priority(&self) -> i8 {
-        self.priority
-    }
-
-    pub fn set_priority(&mut self, priority: i8) {
-        self.priority = priority;
     }
 
     pub fn pgid(&self) -> Tgid {

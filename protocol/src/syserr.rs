@@ -139,6 +139,9 @@ pub enum LinuxError {
 
 #[macro_export]
 macro_rules! linuxerr {
-    ($($code:expr)*) => {Error{location:protocol::Oid(1), cause:"syscall".to_string()}}    
+    ($code:tt) => {{
+        use alloc::string::ToString;
+        Error{location:protocol::Oid(1), cause:"syscall".to_string(), syserr: Some(protocol::LinuxError::$code as u8)}
+    }}    
 }
 

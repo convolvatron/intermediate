@@ -1,9 +1,9 @@
+use protocol::{Error};
 use super::memory::{
     EXCEPTION_BASE,
     fault::{handle_kernel_mem_fault, handle_mem_fault},
 };
 use crate::{
-    KernelError,
     arch::ArchImpl,
     interrupts::get_interrupt_root,
     ksym_pa,
@@ -198,7 +198,7 @@ extern "C" fn el0_serror(state: &mut ExceptionState) {
     default_handler(state);
 }
 
-pub fn exceptions_init() -> Result<(), KernelError> {
+pub fn exceptions_init() -> Result<(), Error> {
     let pa = ksym_pa!(exception_vectors);
     let region = PhysMemoryRegion::new(pa, EXCEPTION_TBL_SZ);
 

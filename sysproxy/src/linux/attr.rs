@@ -1,6 +1,6 @@
+use protocol::{Error, linuxerr};
 use crate::{
-    error::{KernelError},
-    linux::{Gid, Uid, FileType},
+    Gid, Uid, FileType,
 };
 
 use bitflags::bitflags;
@@ -87,7 +87,7 @@ impl FileAttr {
     /// * `uid` - The user-ID that will be checked against this file's uid field.
     /// * `gid` - The group-ID that will be checked against this file's uid field.
     /// * `requested_mode` - A bitmask of `AccessMode` flags (`R_OK`, `W_OK`, `X_OK`) to check.
-    pub fn check_access(&self, uid: Uid, gid: Gid, requested_mode: AccessMode) -> Result<(), KernelError> {
+    pub fn check_access(&self, uid: Uid, gid: Gid, requested_mode: AccessMode) -> Result<(), Error> {
         // root (UID 0) bypasses most permission checks. For execute, at
         // least one execute bit must be set.
         if uid.is_root() {
@@ -118,17 +118,17 @@ impl FileAttr {
         if requested_mode.contains(AccessMode::R_OK)
             && !perms_to_check.contains(FilePermissions::S_IRUSR)
         {
-            return Err(KernelError::NotPermitted);
+            return Err(linuxerr!(EPERM));
         }
         if requested_mode.contains(AccessMode::W_OK)
             && !perms_to_check.contains(FilePermissions::S_IWUSR)
         {
-            return Err(KernelError::NotPermitted);
+            return Err(linuxerr!(EPERM));
         }
         if requested_mode.contains(AccessMode::X_OK)
             && !perms_to_check.contains(FilePermissions::S_IXUSR)
         {
-            return Err(KernelError::NotPermitted);
+            return Err(linuxerr!(EPERM));
         }
 
         Ok(())

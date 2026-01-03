@@ -1,14 +1,11 @@
 use core::marker::PhantomData;
 
-use super::{
-    pg_descriptors::{
+use crate::{
+    Error,
+    arch::arm64::memory::pg_descriptors::{
         L0Descriptor, L1Descriptor, L2Descriptor, L3Descriptor, MemoryType, PaMapper,
         PageTableEntry, TableMapper,
-    },
-};
-use crate::{
-    KernelError,
-    error::MapError,
+    },    
     memory::{
         PAGE_SIZE,
         address::{TPA, TVA, VA},
@@ -183,7 +180,7 @@ pub trait PageTableMapper {
         &mut self,
         pa: TPA<PgTableArray<T>>,
         f: impl FnOnce(TVA<PgTableArray<T>>) -> R,
-    ) -> Result<R, KernelError>;
+    ) -> Result<R, Error>;
 }
 
 /// Trait for allocating new page tables during address space setup.
@@ -199,7 +196,7 @@ pub trait PageAllocator {
     ///
     /// # Errors
     /// Returns an error if allocation fails (e.g., out of memory).
-    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, KernelError>;
+    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, Error>;
 }
 
 /// Describes the attributes of a memory range to be mapped.
@@ -306,11 +303,12 @@ pub fn map_range<PA, PM>(
     l0_table: TPA<PgTableArray<L0Table>>,
     mut attrs: MapAttributes,
     ctx: &mut MappingContext<PA, PM>,
-) -> Result<(), KernelError>
+) -> Result<(), Error>
 where
     PA: PageAllocator,
     PM: PageTableMapper,
 {
+    /*
     if attrs.phys.size() != attrs.virt.size() {
         Err(MapError::SizeMismatch)?
     }
@@ -326,7 +324,7 @@ where
     if !attrs.virt.is_page_aligned() {
         Err(MapError::VirtNotAligned)?
     }
-
+*/
     while attrs.virt.size() > 0 {
         let va = attrs.virt.start_address();
 
@@ -360,7 +358,7 @@ fn try_map_pa<L, PA, PM>(
     phys_region: PhysMemoryRegion,
     attrs: &MapAttributes,
     ctx: &mut MappingContext<PA, PM>,
-) -> Result<Option<usize>, KernelError>
+) -> Result<Option<usize>, Error>
 where
     L: PgTable<Descriptor: PaMapper>,
     PA: PageAllocator,
@@ -387,7 +385,7 @@ where
                         attrs.mem_type,
                         attrs.perms,
                     ),
-                    ctx.invalidator,
+//                    ctx.invalidator,
                 );
             })?;
         }
@@ -402,7 +400,7 @@ pub(super) fn map_at_level<L, PA, PM>(
     table: TPA<PgTableArray<L>>,
     va: VA,
     ctx: &mut MappingContext<PA, PM>,
-) -> Result<TPA<PgTableArray<L::NextLevel>>, KernelError>
+) -> Result<TPA<PgTableArray<L::NextLevel>>, Error>
 where
     L: TableMapperTable,
     PA: PageAllocator,
@@ -439,7 +437,7 @@ where
             L::from_ptr(pgtable).set_desc(
                 va,
                 L::Descriptor::new_next_table(new_pa.to_untyped()),
-                ctx.invalidator,
+//                ctx.invalidator,
             );
         })?;
 
@@ -452,7 +450,7 @@ pub mod tests {
     use super::*;
     use crate::{
         arch::arm64::memory::pg_walk::{WalkContext, walk_and_modify_region},
-        error::KernelError,
+        error::Error,
         memory::address::{IdentityTranslator, PA, VA},
     };
 
@@ -479,7 +477,7 @@ pub mod tests {
     impl PageAllocator for MockPageAllocator {
         fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>> {
             if self.pages_allocated >= self.max_pages {
-                Err(KernelError::NoMemory)
+                Err(Error::NoMemory)
             } else {
                 self.pages_allocated += 1;
                 // Allocate a page-aligned table on the host heap.
@@ -887,7 +885,7 @@ pub mod tests {
 
         let result = map_range(harness.l0_table, attrs, &mut harness.create_map_ctx());
 
-        assert!(matches!(result, Err(KernelError::NoMemory)));
+        assert!(matches!(result, Err(Error::NoMemory)));
         assert_eq!(harness.allocator.pages_allocated, 2); // L0 and L1 were allocated, failed on L2
     }
 
@@ -908,7 +906,7 @@ pub mod tests {
 
         assert!(matches!(
             map_range(harness.l0_table, attrs, &mut harness.create_map_ctx()),
-            Err(KernelError::MappingError(MapError::PhysNotAligned))
+            Err(Error::MappingError(MapError::PhysNotAligned))
         ));
 
         // Virt region is not page-aligned
@@ -924,7 +922,7 @@ pub mod tests {
 
         assert!(matches!(
             map_range(harness.l0_table, attrs, &mut harness.create_map_ctx()),
-            Err(KernelError::MappingError(MapError::VirtNotAligned))
+            Err(Error::MappingError(MapError::VirtNotAligned))
         ));
     }
 
@@ -944,7 +942,7 @@ pub mod tests {
 
         assert!(matches!(
             map_range(harness.l0_table, attrs, &mut harness.create_map_ctx()),
-            Err(KernelError::MappingError(MapError::SizeMismatch))
+            Err(Error::MappingError(MapError::SizeMismatch))
         ));
     }
 
@@ -982,7 +980,7 @@ pub mod tests {
 
         assert!(matches!(
             result,
-            Err(KernelError::MappingError(MapError::AlreadyMapped))
+            Err(Error::MappingError(MapError::AlreadyMapped))
         ));
 
         Ok(())
@@ -1029,7 +1027,7 @@ pub mod tests {
         // where it expected an invalid entry or an L3 table descriptor.
         assert!(matches!(
             result,
-            Err(KernelError::MappingError(MapError::AlreadyMapped))
+            Err(Error::MappingError(MapError::AlreadyMapped))
         ));
 
         Ok(())
@@ -1077,7 +1075,7 @@ pub mod tests {
         // expected an invalid entry.
         assert!(matches!(
             result,
-            Err(KernelError::MappingError(MapError::AlreadyMapped))
+            Err(Error::MappingError(MapError::AlreadyMapped))
         ));
 
         Ok(())

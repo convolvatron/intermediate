@@ -1,7 +1,6 @@
 use crate::{
     current_task,
     memory::address::TUA,
-    memory::uaccess::{UserCopyable},
     linux::Pid,
 };
 
@@ -45,16 +44,13 @@ pub struct RLimit {
     pub rlim_max: u64, // The hard limit
 }
 
-unsafe impl UserCopyable for RLimit {}
-
-
 pub async fn sys_prlimit64(
     pid: Pid,
     resource: u32,
-    new_rlim: TUA<RLimit>,
-    old_rlim: TUA<RLimit>,
+    _new_rlim: TUA<RLimit>,
+    _old_rlim: TUA<RLimit>,
 ) -> Result<usize, Error> {
-    let task = if pid == 0 {
+    if pid == 0 {
         current_task().process.clone()
     } else {
         return Err(err!(Oid(1), "global pidspace not plumbed"));

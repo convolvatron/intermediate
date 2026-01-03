@@ -2,7 +2,7 @@
 
 use crate::{
     UserAddressSpace,
-    error::KernelError,
+    Error,
 };
 use memory_map::{AddressRequest, MemoryMap};
 use vmarea::{AccessKind, FaultValidation, VMAPermissions, VMArea, VMAreaKind};
@@ -38,7 +38,7 @@ impl<AS: UserAddressSpace> ProcessVM<AS> {
 
     /// Constructs a new Process VM structure from the given VMA. The heap is
     /// placed *after* the given VMA.
-    pub fn from_vma(vma: VMArea) -> Result<Self, KernelError> {
+    pub fn from_vma(vma: VMArea) -> Result<Self, Error> {
         let mut mm = MemoryMap::new()?;
 
         mm.insert_and_merge(vma.clone());
@@ -55,7 +55,7 @@ impl<AS: UserAddressSpace> ProcessVM<AS> {
         }
     }
 
-    pub fn empty() -> Result<Self, KernelError> {
+    pub fn empty() -> Result<Self, Error> {
         Ok(Self {
             mm: MemoryMap::new()?,
             brk: VirtMemoryRegion::empty(),
@@ -90,17 +90,17 @@ impl<AS: UserAddressSpace> ProcessVM<AS> {
     ///
     /// # Returns
     /// * `Ok(())` on success.
-    /// * `Err(KernelError)` on failure. This can happen if the requested memory
+    /// * `Err(Error)` on failure. This can happen if the requested memory
     ///   region conflicts with an existing mapping, or if the request is invalid
     ///   (e.g., shrinking the break below its initial start address).
-    pub fn resize_brk(&mut self, new_end_addr: VA) -> Result<VA, KernelError> {
+    pub fn resize_brk(&mut self, new_end_addr: VA) -> Result<VA, Error> {
         let brk_start = self.brk.start_address();
         let current_end = self.brk.end_address();
 
         // The break cannot be shrunk to an address lower than its starting
         // point.
         if new_end_addr < brk_start {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
 
         let new_end_addr_aligned = new_end_addr.align_up(PAGE_SIZE);
@@ -144,7 +144,7 @@ impl<AS: UserAddressSpace> ProcessVM<AS> {
         Ok(new_end_addr)
     }
 
-    pub fn clone_as_cow(&mut self) -> Result<Self, KernelError> {
+    pub fn clone_as_cow(&mut self) -> Result<Self, Error> {
         Ok(Self {
             mm: self.mm.clone_as_cow()?,
             brk: self.brk,
@@ -156,7 +156,7 @@ impl<AS: UserAddressSpace> ProcessVM<AS> {
 mod tests {
     use super::memory_map::tests::MockAddressSpace;
     use super::*;
-    use crate::error::KernelError;
+    use crate::error::Error;
 
     fn setup_vm() -> ProcessVM<MockAddressSpace> {
         let text_vma = VMArea {
@@ -300,7 +300,7 @@ mod tests {
         let result = vm.resize_brk(VA::from_value(initial_brk_start.value() - 1));
 
         // It should fail with an InvalidValue error
-        assert!(matches!(result, Err(KernelError::InvalidValue)));
+        assert!(matches!(result, Err(Error::InvalidValue)));
 
         // And the state of the break should not have changed
         assert_eq!(vm.brk.start_address(), initial_brk_start);
@@ -327,7 +327,7 @@ mod tests {
 
         // Then: the mmap should fail, resulting in an error
         // The specific error comes from your mmap implementation.
-        assert!(matches!(result, Err(KernelError::InvalidValue)));
+        assert!(matches!(result, Err(Error::InvalidValue)));
 
         // And the break should not have grown at all
         assert_eq!(vm.brk.size(), 0);

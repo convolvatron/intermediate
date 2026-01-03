@@ -11,14 +11,12 @@ pub mod general;
 mod interrupts;
 mod memory;
 mod sync;
-mod error;
 mod linux;
 mod ctx;
 
 pub use general::*;
 pub use sync::*;
 pub use memory::*;
-pub use error::*;
 pub use linux::*;
 pub use ctx::*;
 
@@ -70,11 +68,12 @@ pub fn now() -> Instant {
 //   filesystem root
 //   executable oid
 pub fn kmain(ctx_frame: *mut UserCtx) {
-//    spawn_kernel_work(launch_init());
+    //    spawn_kernel_work(launch_init());
     //    dispatch_userspace_task(ctx_frame)
     loop{}
 }
 
 pub fn execute(b: Buffer) -> Result<(), Error> {
+    Ok(())
     // hsvc!
 }

@@ -1,7 +1,9 @@
-use super::vmarea::{VMAPermissions, VMArea, VMAreaKind};
+
+use protocol::Error;
+
 use crate::{
+    proc_vm::vmarea::{VMAPermissions, VMArea, VMAreaKind},
     UserAddressSpace,
-    error::KernelError,
     memory::{
         PAGE_MASK, PAGE_SIZE, address::VA, page::PageFrame, permissions::PtePermissions,
         region::VirtMemoryRegion,
@@ -26,7 +28,7 @@ pub enum AddressRequest {
 
 impl<AS: UserAddressSpace> MemoryMap<AS> {
     /// Creates a new, empty address space.
-    pub fn new() -> Result<Self, KernelError> {
+    pub fn new() -> Result<Self, Error> {
         Ok(Self {
             vmas: BTreeMap::new(),
             address_space: AS::new()?,
@@ -42,7 +44,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
 
     /// Create an address space from a pre-populated list of VMAs. Used by the
     /// ELF loader.
-    pub fn from_vmas(vmas: Vec<VMArea>) -> Result<Self, KernelError> {
+    pub fn from_vmas(vmas: Vec<VMArea>) -> Result<Self, Error> {
         let mut map = BTreeMap::new();
 
         for vma in vmas {
@@ -85,9 +87,9 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
         mut len: usize,
         perms: VMAPermissions,
         kind: VMAreaKind,
-    ) -> Result<VA, KernelError> {
+    ) -> Result<VA, Error> {
         if len == 0 {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
 
         // Ensure the length is page-aligned.
@@ -96,7 +98,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
         }
 
         let region = match requested_address {
-            AddressRequest::Any => self.find_free_region(len).ok_or(KernelError::NoMemory)?,
+            AddressRequest::Any => self.find_free_region(len).ok_or(Error::NoMemory)?,
             AddressRequest::Hint(address) => {
                 // Be more permissive when it's a hint.
                 let address = if !address.is_page_aligned() {
@@ -110,7 +112,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
                 if self.is_region_free(region) {
                     region
                 } else {
-                    self.find_free_region(len).ok_or(KernelError::NoMemory)?
+                    self.find_free_region(len).ok_or(Error::NoMemory)?
                 }
             }
             AddressRequest::Fixed {
@@ -118,13 +120,13 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
                 permit_overlap,
             } => {
                 if !address.is_page_aligned() {
-                    return Err(KernelError::InvalidValue);
+                    return Err(Error::InvalidValue);
                 }
 
                 let region = VirtMemoryRegion::new(address, len);
 
                 if !permit_overlap && !self.is_region_free(region) {
-                    return Err(KernelError::InvalidValue);
+                    return Err(Error::InvalidValue);
                 }
 
                 region
@@ -152,13 +154,13 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
     /// # Returns
     /// * `Ok(())` on success.
     /// * `Err(MunmapError)` on failure.
-    pub fn munmap(&mut self, range: VirtMemoryRegion) -> Result<Vec<PageFrame>, KernelError> {
+    pub fn munmap(&mut self, range: VirtMemoryRegion) -> Result<Vec<PageFrame>, Error> {
         if !range.is_page_aligned() {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
 
         if range.size() == 0 {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
 
         // Ensure len is page-sized.
@@ -169,19 +171,20 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
         &mut self,
         protect_region: VirtMemoryRegion,
         new_perms: VMAPermissions,
-    ) -> Result<(), KernelError> {
+    ) -> Result<(), Error> {
+        /*
         if !protect_region.is_page_aligned() {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
 
         if protect_region.size() == 0 {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
-
+         */
         let affected_vma_addr = self
             .find_vma(protect_region.start_address())
             .map(|x| x.region.start_address())
-            .ok_or(KernelError::NoMemory)?;
+            .ok_or(Error::NoMemory)?;
 
         let affected_vma = self
             .vmas
@@ -223,7 +226,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
         }
 
         // TODO: protecting over contiguous VMAreas.
-        Err(KernelError::NoMemory)
+        Err(Error::NoMemory)
     }
 
     /// Checks if a given virtual memory region is completely free.
@@ -334,7 +337,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
         fixup_region: VirtMemoryRegion,
         old_vma: VMArea,
         new_vma: Option<VMArea>,
-    ) -> Result<Vec<PageFrame>, KernelError> {
+    ) -> Result<Vec<PageFrame>, Error> {
         let intersecting_region = fixup_region.intersection(old_vma.region);
 
         if let Some(intersection) = intersecting_region {
@@ -379,7 +382,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
         &mut self,
         unmap_region: VirtMemoryRegion,
         replace_with: Option<VMArea>,
-    ) -> Result<Vec<PageFrame>, KernelError> {
+    ) -> Result<Vec<PageFrame>, Error> {
         let mut affected_vmas = Vec::new();
         let unmap_start = unmap_region.start_address();
         let unmap_end = unmap_region.end_address();
@@ -470,7 +473,7 @@ impl<AS: UserAddressSpace> MemoryMap<AS> {
     /// Attempts to clone this memory map, sharing any already-mapped writable
     /// pages as CoW pages. If the VMA isn't writable, the ref count is
     /// incremented.
-    pub fn clone_as_cow(&mut self) -> Result<Self, KernelError> {
+    pub fn clone_as_cow(&mut self) -> Result<Self, Error> {
         let mut new_as = AS::new()?;
         let new_vmas = self.vmas.clone();
 

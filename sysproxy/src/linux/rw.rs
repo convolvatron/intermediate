@@ -10,12 +10,12 @@ use crate::{
 
 use protocol::{Buffer, Command, Address, Attribute, attr, linuxerr};
 
-pub async fn sys_write(fd: Fd, user_buf: UA, count: usize) -> Result<usize, Error> {
+pub async fn sys_write(fd: Fd, _user_buf: UA, count: usize) -> Result<usize, Error> {
     let file = current_task()
         .fd_table
         .lock_save_irq()
         .get(fd)
-        .ok_or(linuxerr!(LinuxError::BADFD))?;
+        .ok_or(linuxerr!(EBADF))?;
 
     let mut b = Buffer::new();
     Command::copy(&mut b,
@@ -34,8 +34,9 @@ pub async fn sys_read(fd: Fd, user_buf: UA, count: usize) -> Result<usize, Error
         .fd_table
         .lock_save_irq()
         .get(fd)
-        .ok_or(linuxerr!(LinuxError::BADFD))?;
+        .ok_or(linuxerr!(EBADFD))?;
 
+    // translate user_buf to 'physical'
     let mut b = Buffer::new();
     Command::copy(&mut b,
                   Address::Offset(Box::new(Address::Entity(file.obj, attr!("contents"))), file.pos),

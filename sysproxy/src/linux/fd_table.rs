@@ -1,14 +1,10 @@
 use protocol::{Oid, Error, err};
-use crate::{memory::uaccess::UserCopyable,
-            OpenFlags,
-};
 use alloc::{vec::Vec, sync::Arc};
+use crate::OpenFlags;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Fd(pub i32);
-
-unsafe impl UserCopyable for Fd {}
 
 pub const AT_FDCWD: i32 = -100; // Standard value for "current working directory"
 
@@ -71,7 +67,7 @@ impl FileDescriptorTable {
         self.entries
             .get(fd.0 as usize)
             .and_then(|entry| entry.as_ref())
-            .map(|entry| entry.file.clone())
+            .map(|entry| entry.clone())
     }
 
     /// Inserts a new file into the table, returning the new file descriptor.

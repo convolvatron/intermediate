@@ -1,8 +1,8 @@
 use core::ffi::{CStr, c_char};
-use crate::error::KernelError;
+use protocol::{Error};
 use crate::memory::address::TUA;
 
-use crate::arch::{Arch, ArchImpl};
+use crate::arch::{ArchImpl};
 
 pub struct UserCStr(TUA<c_char>);
 
@@ -11,7 +11,7 @@ impl UserCStr {
         Self(ptr)
     }
 
-    pub async fn copy_from_user(self, buf: &mut [u8]) -> Result<&str, KernelError> {
+    pub async fn copy_from_user(self, buf: &mut [u8]) -> Result<&str, Error> {
         // Ensure null-filled buffer.
         buf.fill(0);
 
@@ -22,7 +22,7 @@ impl UserCStr {
 
         if len == buf.len() {
             // We didn't find a NULL byte and filled up the buffer.
-            return Err(KernelError::BufferFull);
+            return Err(Error::BufferFull);
         }
 
         let cstr = CStr::from_bytes_with_nul(&buf[..len + 1]).unwrap();

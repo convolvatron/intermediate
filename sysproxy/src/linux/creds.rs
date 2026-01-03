@@ -1,15 +1,11 @@
+use protocol::{Error};
 use core::convert::Infallible;
 
 use crate::{
-    KernelError,
-    memory::uaccess::{UserCopyable, copy_to_user},
     current_task,
     linux::{Uid, Gid},
     memory::address::TUA,
 };
-
-unsafe impl UserCopyable for Uid {}
-unsafe impl UserCopyable for Gid {}
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Credentials {
@@ -88,24 +84,24 @@ pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
     Ok(tid as _)
 }
 
-pub async fn sys_getresuid(ruid: TUA<Uid>, euid: TUA<Uid>, suid: TUA<Uid>) -> Result<usize, KernelError> {
+pub async fn sys_getresuid(_ruid: TUA<Uid>, _euid: TUA<Uid>, _suid: TUA<Uid>) -> Result<usize, Error> {
     let task = current_task();
     let creds = task.creds.lock_save_irq().clone();
 
-    copy_to_user(ruid, creds.uid).await?;
+/*    copy_to_user(ruid, creds.uid).await?;
     copy_to_user(euid, creds.euid).await?;
     copy_to_user(suid, creds.suid).await?;
-
+*/
     Ok(0)
 }
 
-pub async fn sys_getresgid(rgid: TUA<Gid>, egid: TUA<Gid>, sgid: TUA<Gid>) -> Result<usize, KernelError> {
-    let task = current_task();
-    let creds = task.creds.lock_save_irq().clone();
+pub async fn sys_getresgid(rgid: TUA<Gid>, egid: TUA<Gid>, sgid: TUA<Gid>) -> Result<usize, Error> {
+    let _task = current_task();
+    let _creds = task.creds.lock_save_irq().clone();
 
-    copy_to_user(rgid, creds.gid).await?;
+/*    copy_to_user(rgid, creds.gid).await?;
     copy_to_user(egid, creds.egid).await?;
     copy_to_user(sgid, creds.sgid).await?;
-
+*/
     Ok(0)
 }

@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use crate::{
     task::ProcVM,
     current_task,
-    KernelError,
+    Error,
     PageInfo,
     UserAddressSpace,
     memory::{address::VA, permissions::PtePermissions, proc_vm::vmarea::AccessKind},
@@ -35,7 +35,7 @@ pub enum FaultResolution {
     /// perform the I/O, map the page, and complete the resolution. The caller
     /// is responsible for polling this future and putting the faulting task to
     /// sleep until the future completes.
-    Deferred(Box<dyn Future<Output = Result<(), KernelError>> + 'static + Send>),
+    Deferred(Box<dyn Future<Output = Result<(), Error>> + 'static + Send>),
 }
 
 /// Handle a page fault when a PTE is not present.
@@ -43,7 +43,7 @@ pub fn handle_demand_fault(
     vm: &mut ProcVM,
     faulting_addr: VA,
     access_kind: AccessKind,
-) -> Result<FaultResolution, KernelError> {
+) -> Result<FaultResolution, Error> {
     let vma = match vm.find_vma_for_fault(faulting_addr, access_kind) {
         Some(vma) => vma,
         None => return Ok(FaultResolution::Denied),
@@ -100,7 +100,7 @@ pub fn handle_protection_fault(
     faulting_addr: VA,
     access_kind: AccessKind,
     pg_info: PageInfo,
-) -> Result<FaultResolution, KernelError> {
+) -> Result<FaultResolution, Error> {
     // Detect CoW condition.
     if access_kind == AccessKind::Write && pg_info.perms.is_cow() {
         let new_pte_perms = pg_info.perms.from_cow();

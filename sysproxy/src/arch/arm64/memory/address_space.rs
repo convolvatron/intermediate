@@ -1,3 +1,4 @@
+use protocol::{Error};
 use aarch64_cpu::{
     asm::barrier::{ISH, SY, dsb, isb},
     registers::{ReadWriteable, TCR_EL1, TTBR0_EL1},
@@ -13,8 +14,6 @@ use crate::{
         },
         pg_walk::{WalkContext, get_pte, walk_and_modify_region},
     },
-    KernelError,
-    MapError,
     memory::{
         PAGE_SIZE,
         PAGE_ALLOC,        
@@ -33,7 +32,7 @@ unsafe impl Send for Arm64ProcessAddressSpace {}
 unsafe impl Sync for Arm64ProcessAddressSpace {}
 
 impl UserAddressSpace for Arm64ProcessAddressSpace {
-    fn new() -> Result<Self, KernelError>
+    fn new() -> Result<Self, Error>
     where
         Self: Sized,
     {
@@ -56,11 +55,11 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
         isb(SY);
     }
 
-    fn map_page(&mut self, page: PageFrame, va: VA, perms: PtePermissions) -> Result<(), KernelError> {
+    fn map_page(&mut self, page: PageFrame, va: VA, perms: PtePermissions) -> Result<(), Error> {
         let mut ctx = MappingContext {
             allocator: &mut PageTableAllocator::new(),
             mapper: &mut PageOffsetPgTableMapper {},
-            invalidator: &AllEl0TlbInvalidator::new(),
+            //invalidator: &AllEl0TlbInvalidator::new(),
         };
 
         map_range(
@@ -75,14 +74,14 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
         )
     }
 
-    fn unmap(&mut self, _va: VA) -> Result<PageFrame, KernelError> {
+    fn unmap(&mut self, _va: VA) -> Result<PageFrame, Error> {
         todo!()
     }
 
-    fn protect_range(&mut self, va_range: VirtMemoryRegion, perms: PtePermissions) -> Result<(), KernelError> {
+    fn protect_range(&mut self, va_range: VirtMemoryRegion, perms: PtePermissions) -> Result<(), Error> {
         let mut walk_ctx = WalkContext {
             mapper: &mut PageOffsetPgTableMapper {},
-            invalidator: &AllEl0TlbInvalidator::new(),
+//            invalidator: &AllEl0TlbInvalidator::new(),
         };
 
         walk_and_modify_region(self.l0_table, va_range, &mut walk_ctx, |_, desc| {
@@ -93,10 +92,10 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
         })
     }
 
-    fn unmap_range(&mut self, va_range: VirtMemoryRegion) -> Result<Vec<PageFrame>, KernelError> {
+    fn unmap_range(&mut self, va_range: VirtMemoryRegion) -> Result<Vec<PageFrame>, Error> {
         let mut walk_ctx = WalkContext {
             mapper: &mut PageOffsetPgTableMapper {},
-            invalidator: &AllEl0TlbInvalidator::new(),
+//            invalidator: &AllEl0TlbInvalidator::new(),
         };
         let mut claimed_pages = Vec::new();
 
@@ -111,10 +110,10 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
         Ok(claimed_pages)
     }
 
-    fn remap(&mut self, va: VA, new_page: PageFrame, perms: PtePermissions) -> Result<PageFrame, KernelError> {
+    fn remap(&mut self, va: VA, new_page: PageFrame, perms: PtePermissions) -> Result<PageFrame, Error> {
         let mut walk_ctx = WalkContext {
             mapper: &mut PageOffsetPgTableMapper {},
-            invalidator: &AllEl0TlbInvalidator::new(),
+//            invalidator: &AllEl0TlbInvalidator::new(),
         };
 
         let mut old_pte = None;
@@ -127,7 +126,7 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
         old_pte
             .and_then(|pte| pte.mapped_address())
             .map(|a| a.to_pfn())
-            .ok_or(KernelError::MappingError(MapError::NotL3Mapped))
+            .ok_or(Error::MappingError(MapError::NotL3Mapped))
     }
 
     fn translate(&self, va: VA) -> Option<PageInfo> {
@@ -149,13 +148,13 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
         region: VirtMemoryRegion,
         other: &mut Self,
         new_perms: PtePermissions,
-    ) -> Result<(), KernelError>
+    ) -> Result<(), Error>
     where
         Self: Sized,
     {
         let mut walk_ctx = WalkContext {
             mapper: &mut PageOffsetPgTableMapper {},
-            invalidator: &AllEl0TlbInvalidator::new(),
+            //invalidator: &AllEl0TlbInvalidator::new(),
         };
 
         walk_and_modify_region(self.l0_table, region, &mut walk_ctx, |va, pgd| {
@@ -173,7 +172,7 @@ impl UserAddressSpace for Arm64ProcessAddressSpace {
                 let mut ctx = MappingContext {
                     allocator: &mut PageTableAllocator::new(),
                     mapper: &mut PageOffsetPgTableMapper {},
-                    invalidator: &AllEl0TlbInvalidator::new(),
+                    //invalidator: &AllEl0TlbInvalidator::new(),
                 };
 
                 map_range(

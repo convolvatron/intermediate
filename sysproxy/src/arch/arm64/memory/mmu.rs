@@ -1,6 +1,6 @@
+use protocol::{Error};
 use crate::{OnceLock, SpinLock};
 use crate::{
-    KernelError,
     KernAddressSpace,
     arch::arm64::memory::{
         page_allocator::PageTableAllocator,
@@ -26,11 +26,11 @@ pub struct Arm64KernelAddressSpace {
 }
 
 impl Arm64KernelAddressSpace {
-    fn do_map(&self, map_attrs: MapAttributes) -> Result<(), KernelError> {
+    fn do_map(&self, map_attrs: MapAttributes) -> Result<(), Error> {
         let mut ctx = MappingContext {
             allocator: &mut PageTableAllocator::new(),
             mapper: &mut PageOffsetPgTableMapper {},
-            invalidator: &AllEl1TlbInvalidator::new(),
+            //invalidator: &AllEl1TlbInvalidator::new(),
         };
 
         map_range(self.kernel_l0, map_attrs, &mut ctx)
@@ -61,7 +61,7 @@ impl KernAddressSpace for Arm64KernelAddressSpace {
         phys_range: PhysMemoryRegion,
         virt_range: VirtMemoryRegion,
         perms: PtePermissions,
-    ) -> Result<(), KernelError> {
+    ) -> Result<(), Error> {
         self.do_map(MapAttributes {
             phys: phys_range,
             virt: virt_range,
@@ -70,7 +70,7 @@ impl KernAddressSpace for Arm64KernelAddressSpace {
         })
     }
 
-    fn map_mmio(&mut self, phys_range: PhysMemoryRegion) -> Result<VA, KernelError> {
+    fn map_mmio(&mut self, phys_range: PhysMemoryRegion) -> Result<VA, Error> {
         let phys_mappable_region = phys_range.to_mappable_region();
         let base_va = self.mmio_ptr;
 
@@ -92,7 +92,7 @@ impl KernAddressSpace for Arm64KernelAddressSpace {
     }
 }
 
-pub fn setup_kern_addr_space(pa: TPA<PgTableArray<L0Table>>) -> Result<(), KernelError> {
+pub fn setup_kern_addr_space(pa: TPA<PgTableArray<L0Table>>) -> Result<(), Error> {
     let addr_space = SpinLock::new(Arm64KernelAddressSpace {
         kernel_l0: pa,
         mmio_ptr: MMIO_BASE,

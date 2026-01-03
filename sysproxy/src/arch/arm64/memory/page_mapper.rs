@@ -1,5 +1,6 @@
+use protocol::Error;
+
 use crate::{
-    KernelError,
     memory::PageOffsetTranslator,
     arch::arm64::memory::pg_tables::{PageTableMapper, PgTable, PgTableArray},
     memory::address::{TPA, TVA},
@@ -12,7 +13,7 @@ impl PageTableMapper for PageOffsetPgTableMapper {
         &mut self,
         pa: TPA<PgTableArray<T>>,
         f: impl FnOnce(TVA<PgTableArray<T>>) -> R,
-    ) -> Result<R, KernelError> {
+    ) -> Result<R, Error> {
         Ok(f(pa.to_va::<PageOffsetTranslator>()))
     }
 }

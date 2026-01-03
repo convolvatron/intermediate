@@ -1,8 +1,8 @@
-use crate::{Buffer, Error, err};
-use alloc::string::String;
+use crate::{Buffer, Error, err, DynEntity};
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-#[derive(PartialEq, Eq, Ord, PartialOrd, Clone, Copy)]
+#[derive(PartialEq, Eq, Ord, PartialOrd, Clone, Copy, Debug)]
 pub struct Oid(pub u128);
 
 pub type Variable = u32;
@@ -82,4 +82,13 @@ impl Encodable for Value {
             x => Err(err!(Oid(1), "invalid Value codepoint {}", x)),
         }
     }
+}
+
+// oid or dyn?
+pub fn get_u64(_e:DynEntity, _a:Attribute) -> Result<u64, Error>{
+    Ok(1)
+}
+
+pub fn get_string(_e:DynEntity, _a:Attribute) -> Result<String, Error>{
+    Ok("just kidding".to_string())
 }

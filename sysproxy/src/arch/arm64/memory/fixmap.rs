@@ -1,9 +1,11 @@
-use crate::{arch::arm64::fdt::MAX_FDT_SZ, ksym_pa, SpinLock};
+use protocol::Error;
+
 use core::{
     ops::{Deref, DerefMut},
-    ptr::NonNull,
 };
 use crate::{
+    ksym_pa, 
+    arch::arm64::{fdt::MAX_FDT_SZ, SpinLock},    
     arch::arm64::memory::{
         FIXMAP_BASE,         
         pg_descriptors::{
@@ -12,12 +14,10 @@ use crate::{
         },
         pg_tables::{L0Table, L1Table, L2Table, L3Table, PgTable, PgTableArray},
     },
-    error::KernelError,
     memory::{
         PAGE_SIZE,
         address::{IdentityTranslator, TPA, TVA, VA},
         permissions::PtePermissions,
-        region::PhysMemoryRegion,
     },
 };
 
@@ -90,76 +90,39 @@ impl Fixmap {
 
     pub fn setup_fixmaps(&mut self, l0_base: TPA<PgTableArray<L0Table>>) {
         let l0_table = L0Table::from_ptr(l0_base.to_va::<IdentityTranslator>());
-        let invalidator = AllEl1TlbInvalidator::new();
+//        let invalidator = AllEl1TlbInvalidator::new();
 
         L1Table::from_ptr(TVA::from_ptr(&mut self.l1 as *mut _)).set_desc(
             FIXMAP_BASE,
             L1Descriptor::new_next_table(ksym_pa!(self.l2)),
-            &invalidator,
+//            &invalidator,
         );
 
         L2Table::from_ptr(TVA::from_ptr(&mut self.l2 as *mut _)).set_desc(
             FIXMAP_BASE,
             L2Descriptor::new_next_table(ksym_pa!(self.l3[0])),
-            &invalidator,
+//            &invalidator,
         );
 
         L2Table::from_ptr(TVA::from_ptr(&mut self.l2 as *mut _)).set_desc(
             VA::from_value(FIXMAP_BASE.value() + (1 << L2Table::SHIFT)),
             L2Descriptor::new_next_table(ksym_pa!(self.l3[1])),
-            &invalidator,
+//            &invalidator,
         );
 
         l0_table.set_desc(
             FIXMAP_BASE,
             L0Descriptor::new_next_table(ksym_pa!(self.l1)),
-            &invalidator,
+//            &invalidator,
         );
-    }
-
-    /// Remap the FDT via the fixmaps.
-    ///
-    /// Unsafe as this will attempt to read the FDT size from the given address,
-    /// therefore ID mappings must be in place to read from the PA.
-    pub unsafe fn remap_fdt(&mut self, fdt_ptr: TPA<u8>) -> Result<VA, KernelError> {
-        let fdt =
-            unsafe { fdt_parser::Fdt::from_ptr(NonNull::new_unchecked(fdt_ptr.as_ptr_mut())) }
-                .map_err(|_| KernelError::InvalidValue)?;
-
-        let sz = fdt.total_size();
-
-        if sz > MAX_FDT_SZ {
-            return Err(KernelError::TooLarge);
-        }
-
-        let mut phys_region = PhysMemoryRegion::new(fdt_ptr.to_untyped(), sz);
-        let mut va = FIXMAP_BASE;
-        let invaldator = AllEl1TlbInvalidator::new();
-
-        while phys_region.size() > 0 {
-            L3Table::from_ptr(TVA::from_ptr_mut(&mut self.l3[0] as *mut _)).set_desc(
-                va,
-                L3Descriptor::new_map_pa(
-                    phys_region.start_address(),
-                    MemoryType::Normal,
-                    PtePermissions::ro(false),
-                ),
-                &invaldator,
-            );
-
-            phys_region = phys_region.add_pages(1);
-            va = va.add_pages(1);
-        }
-
-        Ok(Self::va_for_slot(FixmapSlot::DtbStart))
     }
 
     pub fn temp_remap_page_table<T: PgTable>(
         &mut self,
         pa: TPA<PgTableArray<T>>,
-    ) -> Result<TempFixmapGuard<PgTableArray<T>>, KernelError> {
+    ) -> Result<TempFixmapGuard<PgTableArray<T>>, Error> {
         let va = Self::va_for_slot(FixmapSlot::PgTableTmp);
-        let invalidator = AllEl1TlbInvalidator::new();
+//        let invalidator = AllEl1TlbInvalidator::new();
 
         L3Table::from_ptr(TVA::from_ptr_mut(&mut self.l3[1] as *mut _)).set_desc(
             va,
@@ -168,7 +131,7 @@ impl Fixmap {
                 MemoryType::Normal,
                 PtePermissions::rw(false),
             ),
-            &invalidator,
+//            &invalidator,
         );
 
         Ok(TempFixmapGuard {
@@ -179,12 +142,12 @@ impl Fixmap {
 
     fn unmap_temp_page(&mut self) {
         let va = Self::va_for_slot(FixmapSlot::PgTableTmp);
-        let invalidator = AllEl1TlbInvalidator::new();
+//        let invalidator = AllEl1TlbInvalidator::new();
 
         L3Table::from_ptr(TVA::from_ptr_mut(&mut self.l3[1] as *mut _)).set_desc(
             va,
             L3Descriptor::invalid(),
-            &invalidator,
+//            &invalidator,
         );
     }
 

@@ -1,10 +1,9 @@
+use protocol::{Error};
 use super::{
     pg_descriptors::{L3Descriptor, PageTableEntry, TableMapper},
     pg_tables::{L0Table, L3Table, PageTableMapper, PgTable, PgTableArray, TableMapperTable},
 };
 use crate::{
-    KernelError,
-    error::MapError,
     memory::{
         PAGE_SIZE,
         address::{TPA, VA},
@@ -27,7 +26,7 @@ trait RecursiveWalker: PgTable + Sized {
         region: VirtMemoryRegion,
         ctx: &mut WalkContext<PM>,
         modifier: &mut F,
-    ) -> Result<(), KernelError>
+    ) -> Result<(), Error>
     where
         PM: PageTableMapper,
         F: FnMut(VA, L3Descriptor) -> L3Descriptor;
@@ -43,7 +42,7 @@ where
         region: VirtMemoryRegion,
         ctx: &mut WalkContext<PM>,
         modifier: &mut F,
-    ) -> Result<(), KernelError>
+    ) -> Result<(), Error>
     where
         PM: PageTableMapper,
         F: FnMut(VA, L3Descriptor) -> L3Descriptor,
@@ -88,7 +87,7 @@ impl RecursiveWalker for L3Table {
         region: VirtMemoryRegion,
         ctx: &mut WalkContext<PM>,
         modifier: &mut F,
-    ) -> Result<(), KernelError>
+    ) -> Result<(), Error>
     where
         PM: PageTableMapper,
         F: FnMut(VA, L3Descriptor) -> L3Descriptor,
@@ -99,7 +98,7 @@ impl RecursiveWalker for L3Table {
                 for va in region.iter_pages() {
                     let desc = table.get_desc(va);
                     if desc.is_valid() {
-                        table.set_desc(va, modifier(va, desc), ctx.invalidator);
+                        table.set_desc(va, modifier(va, desc));
                     }
                 }
             })
@@ -133,7 +132,7 @@ pub fn walk_and_modify_region<F, PM>(
     region: VirtMemoryRegion,
     ctx: &mut WalkContext<PM>,
     mut modifier: F, // Pass closure as a mutable ref to be used across recursive calls
-) -> Result<(), KernelError>
+) -> Result<(), Error>
 where
     PM: PageTableMapper,
     F: FnMut(VA, L3Descriptor) -> L3Descriptor,
@@ -154,7 +153,7 @@ pub fn get_pte<PM: PageTableMapper>(
     l0_table: TPA<PgTableArray<L0Table>>,
     va: VA,
     mapper: &mut PM,
-) -> Result<Option<L3Descriptor>, KernelError> {
+) -> Result<Option<L3Descriptor>, Error> {
     let mut descriptor = None;
 
     let mut walk_ctx = WalkContext {
@@ -182,7 +181,7 @@ mod tests {
     use crate::arch::arm64::memory::pg_descriptors::{L2Descriptor, MemoryType, PaMapper};
     use crate::arch::arm64::memory::pg_tables::tests::TestHarness;
     use crate::arch::arm64::memory::pg_tables::{L1Table, L2Table, map_at_level};
-    use crate::error::KernelError;
+    use crate::error::Error;
     use crate::memory::PAGE_SIZE;
     use crate::memory::address::{PA, VA};
     use crate::memory::permissions::PtePermissions;
@@ -389,7 +388,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(crate::error::KernelError::MappingError(
+            Err(crate::error::Error::MappingError(
                 MapError::NotL3Mapped
             ))
         ));
@@ -442,7 +441,7 @@ mod tests {
         );
         assert!(matches!(
             result,
-            Err(KernelError::MappingError(MapError::VirtNotAligned))
+            Err(Error::MappingError(MapError::VirtNotAligned))
         ));
     }
 }

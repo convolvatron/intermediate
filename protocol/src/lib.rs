@@ -17,9 +17,11 @@ pub use value::*;
 pub use syserr::*;
 //pub use memory::*;
 
+#[derive(Debug)]
 pub struct Error {
     location: Oid,
     cause: String,
+    syserr: Option<u8>,
     // file and line can we do?
 }
 
@@ -34,7 +36,14 @@ macro_rules! attr {
 #[macro_export]
 macro_rules! err {
     ($oid:expr, $($arg:tt)*) => {
-        crate::Error{cause:crate::format!($($arg)*), location:$oid}
+        crate::Error{cause:crate::format!($($arg)*), location:$oid, syserr: None}
+    }
+}
+
+#[macro_export]
+macro_rules! out_of_memory! {
+    () => {
+        crate::Error{cause:"out of memory".to_string(), location:Oid(1), syserr: None}
     }
 }
 

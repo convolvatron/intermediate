@@ -1,38 +1,38 @@
 use crate::sched::current_task;
 use crate::{
-    error::KernelError,
+    error::Error,
     fs::OpenFlags,
 };
 
 use super::{Fd, FdFlags, FileDescriptorEntry};
 
-pub fn sys_dup(fd: Fd) -> Result<usize, KernelError> {
+pub fn sys_dup(fd: Fd) -> Result<usize, Error> {
     let task = current_task();
     let mut files = task.fd_table.lock_save_irq();
 
-    let fd = files.get(fd).ok_or(KernelError::BadFd)?;
+    let fd = files.get(fd).ok_or(Error::BadFd)?;
 
     let new_fd = files.insert(fd.clone())?;
 
     Ok(new_fd.as_raw() as _)
 }
 
-pub fn sys_dup3(oldfd: Fd, newfd: Fd, flags: u32) -> Result<usize, KernelError> {
+pub fn sys_dup3(oldfd: Fd, newfd: Fd, flags: u32) -> Result<usize, Error> {
     if oldfd == newfd {
-        return Err(KernelError::InvalidValue);
+        return Err(Error::InvalidValue);
     }
 
     let flags = OpenFlags::from_bits_retain(flags);
 
     if !flags.difference(OpenFlags::O_CLOEXEC).is_empty() {
         // We only permit the O_CLOEXEC flag for dup3.
-        return Err(KernelError::InvalidValue);
+        return Err(Error::InvalidValue);
     }
 
     let task = current_task();
     let mut files = task.fd_table.lock_save_irq();
 
-    let old_file = files.get(oldfd).ok_or(KernelError::BadFd)?;
+    let old_file = files.get(oldfd).ok_or(Error::BadFd)?;
 
     files.insert_at(
         newfd,

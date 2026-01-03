@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
+use protocol::Error;
 
 use crate::{
-    KernelError,
     memory::page::ClaimedPage,    
     arch::arm64::memory::pg_tables::{PageAllocator, PgTable, PgTableArray},
     memory::address::TPA,
@@ -18,7 +18,7 @@ impl PageTableAllocator<'_> {
 }
 
 impl PageAllocator for PageTableAllocator<'_> {
-    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, KernelError> {
+    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, Error> {
         let pg = ClaimedPage::alloc_zeroed()?;
 
         Ok(pg.leak().pa().cast())

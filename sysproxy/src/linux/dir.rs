@@ -1,13 +1,12 @@
 use crate::{
-    error::{KernelError},
-    linux::{FileType},
+    FileType,
     memory::address::UA,
     linux::Fd,
     current_task,
 };
-use alloc::{ffi::CString, string::String, layout::Layout};
-use protocol::{Buffer, linuxerr, DynEntity, Error};
+use protocol::{Buffer, linuxerr, DynEntity, Error, get_string, get_u64};
 
+// merge with file type
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
 enum DirentFileType {
@@ -50,41 +49,37 @@ struct Dirent64Hdr {
     _kind: DirentFileType,
 }
 
-fn pad(x:usize, to:usize) {
-    (((x-1)/to)+1)*to;
+fn pad(x:usize, to:usize) -> usize{
+    (((x-1)/to)+1)*to
 }
 
 fn write_dirent(dirent: DynEntity, dest:&[u8]) -> Result<usize, Error> {
     let name = get_string(dirent, "name");
     let header_len = core::mem::size_of::<Dirent64Hdr>();
-    let unpadded_len = header_len + name.len();
     
     // Userspace expects dirents to always be 8-byte aligned.
-    let padded_reclen = pad(unpadded_len, 8);
+    // are we not allowed to cheat on the last entry?
+    let padded_reclen = pad(header_len + name.len() + 1, 8);
     
     // If the full, padded entry doesn't fit, stop here for this syscall.
-    if padded_reclen > (size as usize).saturating_sub(bytes_written) {
-        return linuxerr!(LinuxError::EINVAL);        
+    if padded_reclen > dest.len() {
+        // isn't this nonmem..nope, someone decided it was the catchall
+        return Err(linuxerr!(EINVAL));        
     }        
 
     // le should be parameterizable, but i guess that battle was lost 30 years ago
     get_u64(dirent, "inode")?.to_le_bytes();
-    kernel_entry_buf[header_len..unpadded_len].copy_from_slice(name);
-    let entry_slice = &kernel_entry_buf[..padded_reclen];
-    // do this incrementally
-    copy_to_user_slice(entry_slice, ubuf).await?;
-    
-    ubuf = ubuf.add_bytes(padded_reclen);
-    bytes_written += padded_reclen;
+    dest[header_len..name.lne()].copy_from_slice(name);
+    Ok(padded_reclen)
 }
 
 pub async fn sys_getdents64(fd: Fd, mut ubuf: UA, size: u32) -> Result<usize, Error> {
     let task = current_task();
-    let file = task
+    let _file = task
         .fd_table
         .lock_save_irq()
         .get(fd)
-        .ok_or(KernelError::BadFd)?;
+        .ok_or(linuxerr!(EBADF))?;
     let b = Buffer::new();
     Ok(0)
 }

@@ -12,10 +12,9 @@ use memory::{
 
 use crate::{
     arch::Arch,
-    KernelError,
     CpuOps, VirtualMemory,
     arch::arm64::memory::pg_tables::{L0Table, PgTableArray},
-    memory::address::{UA, VA},
+    memory::address::{VA},
 //    linux::Task,
     SpinLock,
 };
@@ -78,29 +77,5 @@ impl Arch for Aarch64 {
 
     fn name() -> &'static str {
         "aarch64"
-    }
-
-    unsafe fn copy_from_user(
-        src: UA,
-        dst: *mut (),
-        len: usize,
-    ) -> impl Future<Output = Result<(), KernelError>> {
-        Arm64CopyFromUser::new(src, dst, len)
-    }
-
-    unsafe fn copy_to_user(
-        src: *const (),
-        dst: UA,
-        len: usize,
-    ) -> impl Future<Output = Result<(), KernelError>> {
-        Arm64CopyToUser::new(src, dst, len)
-    }
-
-    unsafe fn copy_strn_from_user(
-        src: UA,
-        dst: *mut u8,
-        len: usize,
-    ) -> impl Future<Output = Result<usize, KernelError>> {
-        Arm64CopyStrnFromUser::new(src, dst as *mut _, len)
     }
 }

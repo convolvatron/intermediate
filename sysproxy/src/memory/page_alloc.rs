@@ -1,6 +1,6 @@
+use protocol::{Error};
 use crate::{
     CpuOps,
-    KernelError,
     memory::{PAGE_SHIFT, address::AddressTranslator, page::PageFrame, smalloc::Smalloc},
     sync::spinlock::SpinLockIrq,
 };
@@ -236,12 +236,12 @@ impl<CPU: CpuOps> FrameAllocator<CPU> {
     /// # Arguments
     /// * `order`: The order of the allocation, where the number of pages is `2^order`.
     ///   `order = 0` requests a single page.
-    pub fn alloc_frames(&self, order: u8) -> Result<PageAllocation<'_, CPU>, KernelError> {
+    pub fn alloc_frames(&self, order: u8) -> Result<PageAllocation<'_, CPU>, Error> {
         let mut inner = self.inner.lock_save_irq();
         let requested_order = order as usize;
 
         if requested_order > MAX_ORDER {
-            return Err(KernelError::InvalidValue);
+            return Err(Error::InvalidValue);
         }
 
         // Find the smallest order >= the requested order that has a free block.
@@ -251,7 +251,7 @@ impl<CPU: CpuOps> FrameAllocator<CPU> {
                 Some((pg_block, order))
             })
         else {
-            return Err(KernelError::NoMemory);
+            return Err(Error::NoMemory);
         };
 
         let free_block = inner.get_frame_mut(free_block.pfn);
@@ -603,7 +603,7 @@ mod tests {
         // A third should fail.
         assert!(matches!(
             fixture.allocator.alloc_frames(MAX_ORDER as u8),
-            Err(KernelError::NoMemory)
+            Err(Error::NoMemory)
         ));
     }
 
@@ -725,7 +725,7 @@ mod tests {
 
         // Next allocation should fail
         let result = fixture.allocator.alloc_frames(0);
-        assert!(matches!(result, Err(KernelError::NoMemory)));
+        assert!(matches!(result, Err(Error::NoMemory)));
 
         // Free everything and check if memory is recovered
         drop(allocs);
@@ -738,7 +738,7 @@ mod tests {
     fn alloc_invalid_order() {
         let fixture = TestFixture::new(&[(0, (1 << (MAX_ORDER + PAGE_SHIFT)) * 2)], &[]);
         let result = fixture.allocator.alloc_frames((MAX_ORDER + 1) as u8);
-        assert!(matches!(result, Err(KernelError::InvalidValue)));
+        assert!(matches!(result, Err(Error::InvalidValue)));
     }
 
     /// Tests the reference counting mechanism in `free_frames`.

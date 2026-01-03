@@ -1,9 +1,9 @@
+use protocol::{Error};
 use alloc::{
     boxed::Box,
     collections::BTreeMap,
     sync::{Arc, Weak},
 };
-use crate::KernelError;
 use crate::{OnceLock, SpinLock};
 
 //pub mod cpu_messenger;
@@ -56,7 +56,7 @@ pub trait InterruptController: Send + Sync {
     fn parse_fdt_interrupt_regs(
         &self,
         iter: &mut dyn Iterator<Item = u32>,
-    ) -> Result<InterruptConfig, KernelError>;
+    ) -> Result<InterruptConfig, Error>;
 }
 
 pub trait InterruptHandler: Send + Sync {
@@ -93,7 +93,7 @@ impl InterruptManager {
     pub fn parse_fdt_interrupt_regs(
         &self,
         iter: &mut dyn Iterator<Item = u32>,
-    ) -> Result<InterruptConfig, KernelError> {
+    ) -> Result<InterruptConfig, Error> {
         self.inner
             .lock_save_irq()
             .controller
@@ -105,7 +105,7 @@ impl InterruptManager {
         self: &Arc<Self>,
         config: InterruptConfig,
         constructor: FConstructor,
-    ) -> Result<Arc<T>, KernelError>
+    ) -> Result<Arc<T>, Error>
     where
         T: 'static + Send + Sync + InterruptHandler,
         FConstructor: FnOnce(ClaimedInterrupt) -> T,
@@ -113,7 +113,7 @@ impl InterruptManager {
         let mut inner = self.inner.lock_save_irq();
 
         if inner.claimed_interrupts.contains_key(&config.descriptor) {
-            return Err(KernelError::InUse);
+            return Err(Error::InUse);
         }
 
         let driver: Arc<T> = Arc::new_cyclic(|driver_weak: &Weak<T>| {

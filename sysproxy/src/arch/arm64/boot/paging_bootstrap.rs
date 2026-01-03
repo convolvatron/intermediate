@@ -67,7 +67,7 @@ impl StaticPageAllocator {
 impl PageAllocator for StaticPageAllocator {
     fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, Error> {
         if self.allocated == STATIC_PAGE_COUNT {
-            return linuxerr!(LinuxError::ENOMEM);
+            return Err(linuxerr!(ENOMEM));
         }
 
         let ret = self.peek::<PgTableArray<T>>();

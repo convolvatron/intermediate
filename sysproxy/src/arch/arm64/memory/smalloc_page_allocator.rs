@@ -1,5 +1,6 @@
+use protocol::Error;
+
 use crate::{
-    KernelError,
     memory::PageOffsetTranslator,
     arch::arm64::memory::pg_tables::{PageAllocator, PgTable, PgTableArray},
     memory::{PAGE_SIZE, address::TPA, smalloc::Smalloc},
@@ -16,7 +17,7 @@ impl<'a> SmallocPageAlloc<'a> {
 }
 
 impl PageAllocator for SmallocPageAlloc<'_> {
-    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, KernelError> {
+    fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, Error> {
         Ok(TPA::from_value(
             self.smalloc.alloc(PAGE_SIZE, PAGE_SIZE)?.value(),
         ))

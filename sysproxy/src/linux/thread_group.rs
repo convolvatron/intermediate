@@ -1,9 +1,8 @@
+use protocol::{Error, linuxerr};
 use crate::{
     current_task,
     address::{TUA, VA},
-    KernelError,
     task::{Task, Tid},
-    memory::uaccess::UserCopyable,
     linux::Pid,
     //linux::ResourceLimits,
     //signal::{SigSet, SignalState},
@@ -66,8 +65,6 @@ impl Pgid {
         self.0
     }
 }
-
-unsafe impl UserCopyable for Pgid {}
 
 /// Session ID.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -199,6 +196,7 @@ impl ThreadGroupBuilder {
             parent: SpinLock::new(self.parent.as_ref().map(Arc::downgrade)),
             umask: SpinLock::new(self.umask.unwrap_or(0)),
             children: SpinLock::new(BTreeMap::new()),
+            /*
             signals: self
                 .sigstate
                 .unwrap_or_else(|| Arc::new(SpinLock::new(SignalState::new_default()))),
@@ -207,6 +205,7 @@ impl ThreadGroupBuilder {
                 .unwrap_or_else(|| Arc::new(SpinLock::new(ResourceLimits::default()))),
             pending_signals: SpinLock::new(SigSet::empty()),
             child_notifiers: ChildNotifiers::new(),
+            */
             next_tid: AtomicU32::new(0),
             state: SpinLock::new(ProcessState::Running),
             threads: SpinLock::new(BTreeMap::new()),
@@ -220,7 +219,7 @@ impl ThreadGroupBuilder {
     }
 }
 
-pub async fn sys_set_tid_address(_tidptr: VA) -> Result<usize, KernelError> {
+pub async fn sys_set_tid_address(_tidptr: VA) -> Result<usize, Error> {
     let tid = current_task().tid;
 
     // TODO: implement threading and this system call properly. For now, we just
@@ -242,9 +241,9 @@ pub struct RobustListHead {
     list_op_pending: RobustList,
 }
 
-pub async fn sys_set_robust_list(head: TUA<RobustListHead>, len: usize) -> Result<usize, KernelError> {
+pub async fn sys_set_robust_list(head: TUA<RobustListHead>, len: usize) -> Result<usize, Error> {
     if core::hint::unlikely(len != size_of::<RobustListHead>()) {
-        return Err(KernelError::InvalidValue);
+        return Err(linuxerr!(EINVAL));
     }
 
     let task = current_task();

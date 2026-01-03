@@ -24,7 +24,7 @@ use crate::memory::{
 };
 
 pub mod fault;
-pub mod uaccess;
+//pub mod uaccess;
 
 pub type PageOffsetTranslator = crate::memory::pg_offset::PageOffsetTranslator<ArchImpl>;
 

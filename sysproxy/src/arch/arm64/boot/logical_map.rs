@@ -1,5 +1,6 @@
+use protocol::Error;
+
 use crate::{
-    KernelError,
     memory::{INITIAL_ALLOCATOR, PageOffsetTranslator},
     arch::arm64::memory::{
         fixmap::{FIXMAPS, Fixmap},
@@ -25,7 +26,7 @@ impl PageTableMapper for FixmapMapper<'_> {
         &mut self,
         pa: TPA<PgTableArray<T>>,
         f: impl FnOnce(TVA<PgTableArray<T>>) -> R,
-    ) -> Result<R, KernelError> {
+    ) -> Result<R, Error> {
         let guard = self.fixmaps.temp_remap_page_table(pa)?;
 
         // SAFETY: The guard will live for the lifetime of the closure.
@@ -33,7 +34,7 @@ impl PageTableMapper for FixmapMapper<'_> {
     }
 }
 
-pub fn setup_logical_map(pgtbl_base: TPA<PgTableArray<L0Table>>) -> Result<(), KernelError> {
+pub fn setup_logical_map(pgtbl_base: TPA<PgTableArray<L0Table>>) -> Result<(), Error> {
     let mut fixmaps = FIXMAPS.lock_save_irq();
     let mut alloc = INITIAL_ALLOCATOR.lock_save_irq();
     let alloc = alloc.as_mut().unwrap();
@@ -46,7 +47,7 @@ pub fn setup_logical_map(pgtbl_base: TPA<PgTableArray<L0Table>>) -> Result<(), K
     let mut ctx = MappingContext {
         allocator: &mut pg_alloc,
         mapper: &mut mapper,
-        invalidator: &AllEl1TlbInvalidator::new(),
+//        invalidator: &AllEl1TlbInvalidator::new(),
     };
 
     for mem_region in mem_list.iter() {

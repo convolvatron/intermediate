@@ -1,3 +1,4 @@
+use protocol::{Error};
 use crate::{
     console, 
     arch::arm64::memory::{mmu::setup_kern_addr_space, 
@@ -5,11 +6,6 @@ use crate::{
     arch::arm64::ExceptionState,
     arch::{ArchImpl, arm64::exceptions::exceptions_init},    
     arch::arm64::memory::pg_tables::{L0Table, PgTableArray},    
-    KernelError,
-    interrupts::{
-        // cpu_messenger::{Message, cpu_messenger_init, message_cpu},
-        get_interrupt_root,
-    },
     CpuOps,
     memory::{
         INITIAL_ALLOCATOR,
@@ -64,21 +60,20 @@ pub fn console_output(s:&str) {
     
 #[unsafe(no_mangle)]
 fn arch_init_stage1(
-    dtb_ptr: TPA<u8>,
     image_start: PA,
     image_end: PA,
     highmem_pgtable_base: TPA<PgTableArray<L0Table>>,
 ) -> VA {
 
-    (|| -> Result<VA, KernelError> {
+    (|| -> Result<VA, Error> {
         console!("secondardy\n");
-        setup_allocator(dtb_ptr, image_start, image_end)?;
+        setup_allocator(image_start, image_end)?;
         console!("C\n");        
         let dtb_addr = {
             let mut fixmaps = FIXMAPS.lock_save_irq();
             fixmaps.setup_fixmaps(highmem_pgtable_base);
 
-            unsafe { fixmaps.remap_fdt(dtb_ptr) }.unwrap()
+//            unsafe { fixmaps.remap_fdt(dtb_ptr) }.unwrap()
         };
         console!("C\n");
 
@@ -125,16 +120,9 @@ fn arch_init_stage2(frame: *mut ExceptionState) -> *mut ExceptionState {
     //    cpu_count())
     unsafe { setup_percpu(1) };
 
-    cpu_messenger_init(1);
-
     kmain(
         frame,
     );
-
-    // boot_secondaries();
-
-    // Prove that we can send IPIs through the messenger.
-    let _ = message_cpu(1, Message::Ping(ArchImpl::id() as _));
 
     frame
 }
@@ -146,11 +134,11 @@ fn arch_init_secondary(ctx_frame: *mut ExceptionState) -> *mut ExceptionState {
 
     // Enable interrupts and exceptions.
     // secondary_exceptions_init();
-
+/*
     if let Some(ic) = get_interrupt_root() {
         ic.enable_core(ArchImpl::id());
     }
-
+*/
     ArchImpl::enable_interrupts();
 
 //    secondary_booted();

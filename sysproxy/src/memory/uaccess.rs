@@ -1,5 +1,5 @@
 use core::mem::MaybeUninit;
-use crate::arch::{Arch, ArchImpl};
+use crate::arch::{ArchImpl};
 use alloc::vec::Vec;
 use crate::memory::address::{TUA, UA};
 use crate::KernelError;

@@ -1,3 +1,4 @@
+use protocol::{Error};
 use alloc::vec::Vec;
 
 use crate::{
@@ -6,7 +7,6 @@ use crate::{
     permissions::PtePermissions,
     region::{PhysMemoryRegion, VirtMemoryRegion},
     spinlock::SpinLockIrq,
-    KernelError,
 };
 
 extern crate alloc;
@@ -55,7 +55,7 @@ pub trait UserAddressSpace: Send + Sync {
     ///
     /// `Ok(Self)` on success, or an `Err` if memory for the top-level page
     /// table could not be allocated.
-    fn new() -> Result<Self, KernelError>
+    fn new() -> Result<Self, Error>
     where
         Self: Sized;
 
@@ -95,7 +95,7 @@ pub trait UserAddressSpace: Send + Sync {
     ///
     /// Returns an error if a mapping already exists at `va` or if memory for
     /// intermediate page tables cannot be allocated.
-    fn map_page(&mut self, page: PageFrame, va: VA, perms: PtePermissions) -> Result<(), KernelError>;
+    fn map_page(&mut self, page: PageFrame, va: VA, perms: PtePermissions) -> Result<(), Error>;
 
     /// Unmaps a single virtual page, returning the physical page it was mapped
     /// to.
@@ -109,7 +109,7 @@ pub trait UserAddressSpace: Send + Sync {
     /// caller to manage the lifecycle of the physical memory (e.g., decrement a
     /// reference count or free it). Returns an error if no page is mapped at
     /// `va`.
-    fn unmap(&mut self, va: VA) -> Result<PageFrame, KernelError>;
+    fn unmap(&mut self, va: VA) -> Result<PageFrame, Error>;
 
     /// Atomically unmaps a page at `va` and maps a new page in its place.
     ///
@@ -118,7 +118,7 @@ pub trait UserAddressSpace: Send + Sync {
     /// The `PageFrame` of the *previously* mapped page, allowing the caller to
     /// manage its lifecycle. Returns an error if no page was originally mapped
     /// at `va`.
-    fn remap(&mut self, va: VA, new_page: PageFrame, perms: PtePermissions) -> Result<PageFrame, KernelError>;
+    fn remap(&mut self, va: VA, new_page: PageFrame, perms: PtePermissions) -> Result<PageFrame, Error>;
 
     /// Changes the protection flags for a range of virtual addresses.
     ///
@@ -128,7 +128,7 @@ pub trait UserAddressSpace: Send + Sync {
     ///
     /// The implementation must ensure that the TLB is invalidated for the
     /// entire range.
-    fn protect_range(&mut self, va_range: VirtMemoryRegion, perms: PtePermissions) -> Result<(), KernelError>;
+    fn protect_range(&mut self, va_range: VirtMemoryRegion, perms: PtePermissions) -> Result<(), Error>;
 
     /// Unmaps an entire range of virtual addresses.
     ///
@@ -140,7 +140,7 @@ pub trait UserAddressSpace: Send + Sync {
     ///
     /// A `Vec<PageFrame>` containing all the physical frames that were
     /// unmapped. This allows the caller to free all associated physical memory.
-    fn unmap_range(&mut self, va_range: VirtMemoryRegion) -> Result<Vec<PageFrame>, KernelError>;
+    fn unmap_range(&mut self, va_range: VirtMemoryRegion) -> Result<Vec<PageFrame>, Error>;
 
     /// Translates a virtual address to its corresponding physical mapping
     /// information.
@@ -190,7 +190,7 @@ pub trait UserAddressSpace: Send + Sync {
         region: VirtMemoryRegion,
         other: &mut Self,
         perms: PtePermissions,
-    ) -> Result<(), KernelError>
+    ) -> Result<(), Error>
     where
         Self: Sized;
 }
@@ -198,7 +198,7 @@ pub trait UserAddressSpace: Send + Sync {
 /// Represents the kernel's memory context.
 pub trait KernAddressSpace: Send {
     /// Map the given region as MMIO memory.
-    fn map_mmio(&mut self, region: PhysMemoryRegion) -> Result<VA, KernelError>;
+    fn map_mmio(&mut self, region: PhysMemoryRegion) -> Result<VA, Error>;
 
     /// Map the given region as normal memory.
     fn map_normal(
@@ -206,7 +206,7 @@ pub trait KernAddressSpace: Send {
         phys_range: PhysMemoryRegion,
         virt_range: VirtMemoryRegion,
         perms: PtePermissions,
-    ) -> Result<(), KernelError>;
+    ) -> Result<(), Error>;
 }
 
 /// The types and functions required for the virtual memory subsystem.

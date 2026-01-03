@@ -28,7 +28,7 @@ use core::{
 };
 
 use crate::{
-    KernelError,
+    Error,
     PAGE_SHIFT, PAGE_SIZE,
     address::{AddressTranslator, PA},
     page::PageFrame,
@@ -231,14 +231,14 @@ impl<T: AddressTranslator<()>> Smalloc<T> {
         None
     }
 
-    pub fn alloc(&mut self, size: usize, align: usize) -> Result<PA, KernelError> {
+    pub fn alloc(&mut self, size: usize, align: usize) -> Result<PA, Error> {
         if self.res.requires_reallocation() {
             self.grow_region_list(RegionListType::Res)?;
         }
 
         let address = self
             .find_allocation_location(size, align)
-            .ok_or(KernelError::NoMemory)?;
+            .ok_or(Error::NoMemory)?;
 
         // Allocation fits and doesn't overlap any reservation
         self.res.insert_region(PhysMemoryRegion::new(address, size));
@@ -246,7 +246,7 @@ impl<T: AddressTranslator<()>> Smalloc<T> {
         Ok(address)
     }
 
-    pub fn free(&mut self, addr: PA, size: usize) -> Result<(), KernelError> {
+    pub fn free(&mut self, addr: PA, size: usize) -> Result<(), Error> {
         let region_to_remove = PhysMemoryRegion::new(addr, size);
 
         let index_opt = self.res.iter().position(|r| r.contains(region_to_remove));
@@ -292,13 +292,13 @@ impl<T: AddressTranslator<()>> Smalloc<T> {
 
             Ok(())
         } else {
-            Err(KernelError::NoMemRegion)
+            Err(Error::NoMemRegion)
         }
     }
 
-    fn grow_region_list(&mut self, list_type: RegionListType) -> Result<(), KernelError> {
+    fn grow_region_list(&mut self, list_type: RegionListType) -> Result<(), Error> {
         if !self.permit_region_realloc {
-            return Err(KernelError::NoMemory);
+            return Err(Error::NoMemory);
         }
 
         let mut list = match list_type {
@@ -341,11 +341,11 @@ impl<T: AddressTranslator<()>> Smalloc<T> {
 
             Ok(())
         } else {
-            Err(KernelError::NoMemory)
+            Err(Error::NoMemory)
         }
     }
 
-    pub fn add_reservation(&mut self, region: PhysMemoryRegion) -> Result<(), KernelError> {
+    pub fn add_reservation(&mut self, region: PhysMemoryRegion) -> Result<(), Error> {
         if self.res.requires_reallocation() {
             self.grow_region_list(RegionListType::Res)?;
         }
@@ -363,7 +363,7 @@ impl<T: AddressTranslator<()>> Smalloc<T> {
         }
     }
 
-    pub fn add_memory(&mut self, region: PhysMemoryRegion) -> Result<(), KernelError> {
+    pub fn add_memory(&mut self, region: PhysMemoryRegion) -> Result<(), Error> {
         if self.memory.requires_reallocation() {
             self.grow_region_list(RegionListType::Mem)?;
         }
@@ -373,7 +373,7 @@ impl<T: AddressTranslator<()>> Smalloc<T> {
         Ok(())
     }
 
-    pub fn alloc_page(&mut self) -> Result<PageFrame, KernelError> {
+    pub fn alloc_page(&mut self) -> Result<PageFrame, Error> {
         let pa = self.alloc(PAGE_SIZE, PAGE_SIZE)?;
 
         Ok(PageFrame::from_pfn(pa.value() >> PAGE_SHIFT))
@@ -507,7 +507,7 @@ mod tests {
     use rand::{Rng, SeedableRng};
 
     use crate::{
-        error::KernelError,
+        error::Error,
         memory::{
             address::{IdentityTranslator, PA},
             region::PhysMemoryRegion,
@@ -912,7 +912,7 @@ mod tests {
         assert!(smalloc.free(addr, 0x100).is_ok());
         assert!(matches!(
             smalloc.free(addr, 0x100),
-            Err(KernelError::NoMemRegion)
+            Err(Error::NoMemRegion)
         )); // already freed
     }
 

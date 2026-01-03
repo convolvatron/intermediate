@@ -6,7 +6,7 @@ use crate::{PAGE_ALLOC,
             PAGE_SIZE,
             memory::ArchImpl,
             address::{PA, VA},
-            KernelError,
+            Error,
             page_alloc::PageAllocation,
             region::PhysMemoryRegion, PageOffsetTranslator};
 
@@ -57,13 +57,13 @@ impl Display for ClaimedPage {
 impl ClaimedPage {
     /// Allocates a single physical page. The contents of the page are
     /// undefined.
-    fn alloc() -> Result<Self, KernelError> {
+    fn alloc() -> Result<Self, Error> {
         let frame = PAGE_ALLOC.get().unwrap().alloc_frames(0)?;
         Ok(Self(frame))
     }
 
     /// Allocates a single physical page and zeroes its contents.
-    pub fn alloc_zeroed() -> Result<Self, KernelError> {
+    pub fn alloc_zeroed() -> Result<Self, Error> {
         let mut page = Self::alloc()?;
         page.as_slice_mut().fill(0);
         Ok(page)
