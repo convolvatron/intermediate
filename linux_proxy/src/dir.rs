@@ -1,5 +1,11 @@
 use crate::{Fd, FileType, UserAddress, linuxerr};
-use protocol::{Buffer, DynEntity, Error, attribute, get_string, get_u64};
+use protocol::{Buffer,
+               DynEntity,
+               Error,
+               Attribute,
+               attribute,
+               get_string,
+               get_u64};
 
 // merge with file type
 #[repr(u8)]

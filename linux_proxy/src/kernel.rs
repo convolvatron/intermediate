@@ -1,13 +1,13 @@
 use crate::Pid;
 use alloc::vec::Vec;
 use core::sync::atomic::Ordering;
-use protocol::Command;
+use protocol::{Command, Error};
 
 // this is a logical kernel instance, really just a place to stash all the
 // globals from moss-kernel in someplace that isn't so global
 
 pub struct Kernel {
-    pid_count: alloc::sync::Atomic::u64,
+    pid_count: core::sync::atomic::AtomicU64,
 }
 
 impl Kernel {

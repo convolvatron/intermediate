@@ -25,8 +25,17 @@ pub use process::*;
 pub use rsrc_lim::*;
 pub use syserr::*;
 pub use task::*;
+pub use path::*;
 
 pub type UserAddress = u64;
+use core::marker::PhantomData;
+
+#[macro_export]
+macro_rules! perr {
+    ($k:expr, $($arg:tt)*) => {{
+        protocol::Error{cause:alloc::format!($($arg)*), location:$k.myself, syserr: None}
+    }}
+}
 
 pub struct Lock<A> {
     _a: PhantomData<A>,

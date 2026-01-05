@@ -5,7 +5,7 @@ use crate::{Fd, UserAddress, linuxerr};
 
 use protocol::{Address, Attribute, Buffer, Command, attribute};
 
-pub async fn sys_write(fd: Fd, _user_buf: UA, count: usize) -> Result<usize, Error> {
+pub async fn sys_write(fd: Fd, _user_buf: UserAddress, count: usize) -> Result<usize, Error> {
     let file = current_task()
         .fd_table
         .lock_save_irq()
@@ -29,7 +29,7 @@ pub async fn sys_write(fd: Fd, _user_buf: UA, count: usize) -> Result<usize, Err
     Ok(count)
 }
 
-pub async fn sys_read(fd: Fd, user_buf: UA, count: usize) -> Result<usize, Error> {
+pub async fn sys_read(fd: Fd, user_buf: UserAddress, count: usize) -> Result<usize, Error> {
     let file = current_task()
         .fd_table
         .lock_save_irq()

@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 use protocol::Error;
 
-use crate::{Gid, Uid, UserAddress};
+use crate::{Gid, Uid, UserAddress, Task};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Credentials {
@@ -81,12 +81,12 @@ pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
 }
 
 pub async fn sys_getresuid(
-    _ruid: UserAddress,
-    _euid: UserAddress,
-    _suid: UserAddress,
+    t:Task,
+    _ruid: *mut Uid,
+    _euid: *mut Uid,
+    _suid: *mut Uid,
 ) -> Result<usize, Error> {
-    let task = current_task();
-    let creds = task.creds.lock_save_irq().clone();
+    let creds = t.process.creds.lock_save_irq().clone();
 
     /*    copy_to_user(ruid, creds.uid).await?;
         copy_to_user(euid, creds.euid).await?;

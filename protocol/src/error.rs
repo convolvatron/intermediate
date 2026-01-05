@@ -12,7 +12,7 @@ pub struct Error {
     
 #[macro_export]
 macro_rules! err {
-    ($oid:expr, $($arg:tt)*) => {
+    ($oid:expr, $($arg:tt)*) => {{
         crate::Error{cause:alloc::format!($($arg)*), location:$oid, syserr: None}
-    }
+    }}
 }

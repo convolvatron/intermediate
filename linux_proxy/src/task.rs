@@ -1,15 +1,10 @@
-use protocol::{DynEntity, Oid};
+use protocol::{Oid};
 
 use crate::{
-    Lock, Pid, Process, RobustListHead, UserAddress, creds::Credentials,
-    fd_table::FileDescriptorTable,
+    Lock, Pid, Process, 
 };
 
-use alloc::{
-    collections::btree_map::BTreeMap,
-    string::String,
-    sync::{Arc, Weak},
-};
+use alloc::{sync::Arc};
 
 pub struct Task {
     pub tid: Tid,
@@ -42,16 +37,6 @@ impl Task {
 // Thread Id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Tid(pub u32);
-
-impl Tid {
-    pub fn value(self) -> u32 {
-        self.0
-    }
-
-    pub fn from_tgid(tgid: Tgid) -> Self {
-        Self(tgid.0)
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskState {

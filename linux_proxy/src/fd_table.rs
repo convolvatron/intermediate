@@ -1,6 +1,6 @@
-use crate::OpenFlags;
-use alloc::{sync::Arc, vec::Vec};
-use protocol::{Error, Oid, err};
+use crate::{OpenFlags, perr, Process};
+use alloc::{sync::Arc};
+use protocol::{Error, Oid};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -41,29 +41,11 @@ pub struct FileDescriptorEntry {
     pub flags: FdFlags,
 }
 
-pub struct FileDescriptorTable {
-    entries: Vec<Option<FileDescriptorEntry>>,
-    next_fd_hint: usize,
-}
-
 const MAX_FDS: usize = 8192;
 
-impl Default for FileDescriptorTable {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl FileDescriptorTable {
-    pub fn new() -> Self {
-        Self {
-            entries: Vec::new(),
-            next_fd_hint: 0,
-        }
-    }
-
+impl Process {
     /// Gets the file object associated with a given file descriptor.
-    pub fn get(&self, fd: Fd) -> Option<Arc<FileDescriptorEntry>> {
+    pub fn get_fd(&self, fd: Fd) -> Option<Arc<FileDescriptorEntry>> {
         self.entries
             .get(fd.0 as usize)
             .and_then(|entry| entry.as_ref())
@@ -71,7 +53,7 @@ impl FileDescriptorTable {
     }
 
     /// Inserts a new file into the table, returning the new file descriptor.
-    pub fn insert(&mut self, obj: Oid, oflags: OpenFlags) -> Result<Fd, Error> {
+    pub fn insert_fd(&mut self, obj: Oid, oflags: OpenFlags) -> Result<Fd, Error> {
         let fd = self.find_free_fd()?;
 
         let entry = FileDescriptorEntry {
@@ -101,7 +83,7 @@ impl FileDescriptorTable {
 
     /// Removes a file descriptor from the table, returning the file if it
     /// existed.
-    pub fn remove(&mut self, fd: Fd) {
+    pub fn remove_fd(&mut self, fd: Fd) {
         let fd_idx = fd.0 as usize;
 
         if let Some(entry) = self.entries.get_mut(fd_idx)
@@ -112,29 +94,8 @@ impl FileDescriptorTable {
         }
     }
 
-    /// Creates a new `FileDescriptorTable` for a child process during `execve`.
-    /// It duplicates all file descriptors that do not have the `CLOEXEC` flag
-    /// set.
-    pub fn clone_for_exec(&self) -> Self {
-        let new_entries = self
-            .entries
-            .iter()
-            .map(|entry| {
-                entry.as_ref().and_then(|e| {
-                    if !e.flags.contains(FdFlags::CLOEXEC) {
-                        Some(e.clone())
-                    } else {
-                        None
-                    }
-                })
-            })
-            .collect();
 
-        Self {
-            entries: new_entries,
-            next_fd_hint: 0, // Recalculate hint on first use in new process.
-        }
-    }
+    //    pub fn clone_for_exec(&self) -> Self {
 
     /// Finds the lowest-numbered available file descriptor.
     fn find_free_fd(&mut self) -> Result<Fd, Error> {
@@ -151,7 +112,7 @@ impl FileDescriptorTable {
 
         if next >= MAX_FDS {
             // this should be in the process context
-            Err(err!(protocol::Value::Oid(1), "too many files"))
+            Err(perr!(self.k, "too many files"))
         } else {
             self.next_fd_hint = next + 1;
             Ok(Fd(next as i32))

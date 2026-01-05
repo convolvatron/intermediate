@@ -1,6 +1,6 @@
-use crate::{Pid, UserAddress};
+use crate::{Pid, Task};
 
-use protocol::{Error, Oid, err};
+use protocol::Error;
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug)]
@@ -41,16 +41,12 @@ pub struct RLimit {
 }
 
 pub async fn sys_prlimit64(
+    t:Task,
     pid: Pid,
     resource: u32,
     _new_rlim: *const RLimit,
     _old_rlim: *mut RLimit,
 ) -> Result<usize, Error> {
-    if pid == 0 {
-        current_task().process.clone()
-    } else {
-        return Err(err!(Oid(1), "global pidspace not plumbed"));
-    };
     /*
     tree me baby
         let new_limit = if !new_rlim.is_null() {

@@ -1,17 +1,47 @@
 use protocol::Error;
-
 use core::convert::Infallible;
+use crate::{Task};
+use alloc::fmt::Display;
 
-use crate::{Pgid, Process, Task};
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Pid(pub u32);
 
-/// Userspace `pid_t` type.
-pub type Pid = i32;
+impl Pid {
+    pub fn value(self) -> u32 {
+        self.0
+    }
 
-pub fn sys_getpid(t: Task) -> core::result::Result<usize, Infallible> {
+    pub fn is_idle(self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn from_pid_t(pid: Pid) -> Pid {
+        Self(pid as _)
+    }
+}
+
+impl Display for Pid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// Process Group ID.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Pgid(pub u32);
+
+impl Pgid {
+    pub fn value(self) -> u32 {
+        self.0
+    }
+}
+
+pub fn sys_getpid(t: Task) -> Result<usize, Infallible> {
     Ok(t.process.tgid.value() as _)
 }
 
-pub fn sys_getppid(t: Task) -> core::result::Result<usize, Infallible> {
+pub fn sys_getppid(t: Task) -> Result<usize, Infallible> {
     Ok(t.process
         .parent
         .lock_save_irq()
