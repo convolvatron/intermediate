@@ -1,8 +1,5 @@
-use protocol::{Error};
-use crate::{
-    linuxerr,
-    Gid, Uid, FileType,
-};
+use crate::{FileType, Gid, Uid, linuxerr};
+use protocol::Error;
 
 use bitflags::bitflags;
 use core::time::Duration;
@@ -88,7 +85,12 @@ impl FileAttr {
     /// * `uid` - The user-ID that will be checked against this file's uid field.
     /// * `gid` - The group-ID that will be checked against this file's uid field.
     /// * `requested_mode` - A bitmask of `AccessMode` flags (`R_OK`, `W_OK`, `X_OK`) to check.
-    pub fn check_access(&self, uid: Uid, gid: Gid, requested_mode: AccessMode) -> Result<(), Error> {
+    pub fn check_access(
+        &self,
+        uid: Uid,
+        gid: Gid,
+        requested_mode: AccessMode,
+    ) -> Result<(), Error> {
         // root (UID 0) bypasses most permission checks. For execute, at
         // least one execute bit must be set.
         if uid.is_root() {

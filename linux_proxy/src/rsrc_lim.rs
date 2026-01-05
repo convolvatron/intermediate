@@ -1,10 +1,6 @@
-use crate::{
-    current_task,
-    UserAddress,
-    Pid,
-};
+use crate::{Pid, UserAddress};
 
-use protocol::{Error, err, Oid};
+use protocol::{Error, Oid, err};
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug)]
@@ -56,24 +52,24 @@ pub async fn sys_prlimit64(
         return Err(err!(Oid(1), "global pidspace not plumbed"));
     };
     /*
-tree me baby
-    let new_limit = if !new_rlim.is_null() {
-        Some(copy_from_user(new_rlim).await?)
-    } else {
-        None
-    };
+    tree me baby
+        let new_limit = if !new_rlim.is_null() {
+            Some(copy_from_user(new_rlim).await?)
+        } else {
+            None
+        };
 
-    let old_lim = if let Some(new_limit) = new_limit {
-        task.rsrc_lim
-            .lock_save_irq()
-            .set(resource, new_limit, true)?
-    } else {
-        task.rsrc_lim.lock_save_irq().get(resource)
-    };
+        let old_lim = if let Some(new_limit) = new_limit {
+            task.rsrc_lim
+                .lock_save_irq()
+                .set(resource, new_limit, true)?
+        } else {
+            task.rsrc_lim.lock_save_irq().get(resource)
+        };
 
-    if !old_rlim.is_null() {
-        copy_to_user(old_rlim, old_lim).await?
-    }
-*/
+        if !old_rlim.is_null() {
+            copy_to_user(old_rlim, old_lim).await?
+        }
+    */
     Ok(0)
 }

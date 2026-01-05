@@ -1,12 +1,7 @@
-use protocol::{Error};
 use core::convert::Infallible;
+use protocol::Error;
 
-use crate::{
-    current_task,
-    Uid,
-    Gid,
-    UserAddress,
-};
+use crate::{Gid, Uid, UserAddress};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Credentials {
@@ -85,24 +80,32 @@ pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
     Ok(tid as _)
 }
 
-pub async fn sys_getresuid(_ruid: UserAddress, _euid: UserAddress, _suid: UserAddress) -> Result<usize, Error> {
+pub async fn sys_getresuid(
+    _ruid: UserAddress,
+    _euid: UserAddress,
+    _suid: UserAddress,
+) -> Result<usize, Error> {
     let task = current_task();
     let creds = task.creds.lock_save_irq().clone();
 
-/*    copy_to_user(ruid, creds.uid).await?;
-    copy_to_user(euid, creds.euid).await?;
-    copy_to_user(suid, creds.suid).await?;
-*/
+    /*    copy_to_user(ruid, creds.uid).await?;
+        copy_to_user(euid, creds.euid).await?;
+        copy_to_user(suid, creds.suid).await?;
+    */
     Ok(0)
 }
 
-pub async fn sys_getresgid(rgid: UserAddress, egid: UserAddress, sgid: UserAddress) -> Result<usize, Error> {
+pub async fn sys_getresgid(
+    rgid: UserAddress,
+    egid: UserAddress,
+    sgid: UserAddress,
+) -> Result<usize, Error> {
     let task = current_task();
     let _creds = task.creds.lock_save_irq().clone();
 
-/*    copy_to_user(rgid, creds.gid).await?;
-    copy_to_user(egid, creds.egid).await?;
-    copy_to_user(sgid, creds.sgid).await?;
-*/
+    /*    copy_to_user(rgid, creds.gid).await?;
+        copy_to_user(egid, creds.egid).await?;
+        copy_to_user(sgid, creds.sgid).await?;
+    */
     Ok(0)
 }

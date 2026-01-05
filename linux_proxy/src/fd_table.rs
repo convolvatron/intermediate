@@ -1,6 +1,6 @@
-use protocol::{Oid, Error, err};
-use alloc::{vec::Vec, sync::Arc};
 use crate::OpenFlags;
+use alloc::{sync::Arc, vec::Vec};
+use protocol::{Error, Oid, err};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -37,7 +37,7 @@ bitflags::bitflags! {
 pub struct FileDescriptorEntry {
     pub obj: Oid,
     pub oflags: crate::OpenFlags,
-    pub pos: u64,    
+    pub pos: u64,
     pub flags: FdFlags,
 }
 
@@ -61,7 +61,7 @@ impl FileDescriptorTable {
             next_fd_hint: 0,
         }
     }
-    
+
     /// Gets the file object associated with a given file descriptor.
     pub fn get(&self, fd: Fd) -> Option<Arc<FileDescriptorEntry>> {
         self.entries
@@ -71,13 +71,13 @@ impl FileDescriptorTable {
     }
 
     /// Inserts a new file into the table, returning the new file descriptor.
-    pub fn insert(&mut self, obj: Oid, oflags:OpenFlags) -> Result<Fd, Error> {
+    pub fn insert(&mut self, obj: Oid, oflags: OpenFlags) -> Result<Fd, Error> {
         let fd = self.find_free_fd()?;
 
         let entry = FileDescriptorEntry {
             obj,
             oflags,
-            pos:0,
+            pos: 0,
             flags: FdFlags::default(),
         };
 

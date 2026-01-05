@@ -1,19 +1,13 @@
-
-use protocol::{Oid, DynEntity};
+use protocol::{DynEntity, Oid};
 
 use crate::{
-    RobustListHead,
-    Lock,
-    UserAddress,    
-    creds::Credentials,
+    Lock, Pid, Process, RobustListHead, UserAddress, creds::Credentials,
     fd_table::FileDescriptorTable,
-    Pid,
-    Process,
 };
 
 use alloc::{
-    string::String,
     collections::btree_map::BTreeMap,
+    string::String,
     sync::{Arc, Weak},
 };
 
@@ -40,12 +34,9 @@ impl Task {
         self.tid
     }
 
-    /// Return a new desctiptor that uniquely represents this task in the
-    /// system.
-
-//    pub fn raise_task_signal(&self, signal: SigId) {
-//        self.pending_signals.lock_save_irq().insert(signal.into());
-//    }
+    //    pub fn raise_task_signal(&self, signal: SigId) {
+    //        self.pending_signals.lock_save_irq().insert(signal.into());
+    //    }
 }
 
 // Thread Id.

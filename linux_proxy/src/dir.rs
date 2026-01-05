@@ -1,11 +1,5 @@
-use crate::{
-    FileType,
-    UserAddress,
-    Fd,
-    current_task,
-    linuxerr,
-};
-use protocol::{Buffer, DynEntity, Error, get_string, get_u64};
+use crate::{Fd, FileType, UserAddress, linuxerr};
+use protocol::{Buffer, DynEntity, Error, attribute, get_string, get_u64};
 
 // merge with file type
 #[repr(u8)]
@@ -50,23 +44,23 @@ struct Dirent64Hdr {
     _kind: DirentFileType,
 }
 
-fn pad(x:usize, to:usize) -> usize{
-    (((x-1)/to)+1)*to
+fn pad(x: usize, to: usize) -> usize {
+    (((x - 1) / to) + 1) * to
 }
 
-fn write_dirent(dirent: DynEntity, dest:Buffer) -> Result<usize, Error> {
+fn write_dirent(dirent: DynEntity, dest: Buffer) -> Result<usize, Error> {
     let name = get_string(dirent, "name");
     let header_len = core::mem::size_of::<Dirent64Hdr>();
-    
+
     // Userspace expects dirents to always be 8-byte aligned.
     // are we not allowed to cheat on the last entry?
     let padded_reclen = pad(header_len + name.len() + 1, 8);
-    
+
     // If the full, padded entry doesn't fit, stop here for this syscall.
     if padded_reclen > dest.len() {
         // isn't this nonmem..nope, someone decided it was the catchall
-        return Err(linuxerr!(EINVAL));        
-    }        
+        return Err(linuxerr!(EINVAL));
+    }
 
     // le should be parameterizable, but i guess that battle was lost 30 years ago
     get_u64(dirent, "inode")?.to_le_bytes();
@@ -86,6 +80,6 @@ pub async fn sys_getdents64(fd: Fd, mut ubuf: UserAddress, size: u32) -> Result<
     while let Some(t) = st.next() {
         write_dirent(t, b);
     }
-    
+
     Ok(0)
 }

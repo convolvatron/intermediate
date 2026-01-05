@@ -1,0 +1,24 @@
+This project is a prototype for intermediating syscalls for purposes of distributed
+evaluation, policy expression, packaging, and recasting the environment of existing
+service binaries.
+
+It uses a fairly heavyweight implementation where processes are wrapped in a proxy
+kernel (linux_proxy and arm64_kernel) run as a virtual machine by a hypervisor monitor
+which proxies the actual services of the host.
+
+The client side (proxy kernel) is derived form the
+https://github.com/hexagonal-sun/moss-kernel, with heavy and fairly gratuitous
+modifications. Modifications which should be considered as suggested changes to
+moss itself, its just that the intent here is somewhat different.
+
+
+        application
+             |
+        linux_proxy           monitor
+         |       |               |  
+         |      protocol------protocol 
+         |
+        arm64_kernel 
+ 
+There are some incomplete design documents in linux_proxy/doc/implementations.pdf
+and and protocol/doc/protocol.pdf. 

@@ -9,35 +9,22 @@ mod buffer;
 mod command;
 mod memory;
 mod value;
+mod error;
 
 pub use address::*;
 pub use buffer::*;
 pub use command::*;
 pub use value::*;
+pub use error::*;
 //pub use memory::*;
 
-#[derive(Debug)]
-pub struct Error {
-    location: Oid,
-    cause: String,
-    syserr: Option<u8>,
-    // file and line can we do?
-}
-
 #[macro_export]
-macro_rules! attr {
+macro_rules! attribute {
     ($sattr:expr) => {
         Attribute($sattr.to_string())
     }
 }
 
-    
-#[macro_export]
-macro_rules! err {
-    ($oid:expr, $($arg:tt)*) => {
-        crate::Error{cause:crate::format!($($arg)*), location:$oid, syserr: None}
-    }
-}
 
 type DynResolver = Arc<dyn Resolver>;
 pub trait Resolver {

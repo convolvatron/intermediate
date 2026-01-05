@@ -1,23 +1,18 @@
-use protocol::{Error};
-use core::ffi::c_long;
 use crate::{
-    FileDescriptorTable,
-    Lock,
-    Kernel,
-    linuxerr,
-    current_task,
-    UserAddress,    
+    Credentials, FileDescriptorTable, Kernel, Lock, UserAddress, linuxerr,
     task::{Task, Tid},
 };
+use core::ffi::c_long;
+use protocol::{Error, Oid};
 
 use core::sync::atomic::AtomicU32;
 
-use alloc::{collections::btree_map::BTreeMap, sync::{Arc, Weak}};
-
-use core::{
-    fmt::Display,
-    sync::atomic::{Ordering},
+use alloc::{
+    collections::btree_map::BTreeMap,
+    sync::{Arc, Weak},
 };
+
+use core::{fmt::Display, sync::atomic::Ordering};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pid(pub u32);
@@ -70,7 +65,7 @@ pub enum ProcessState {
 }
 
 pub struct Process {
-    pub kernel:Arc<Kernel>,
+    pub kernel: Arc<Kernel>,
     pub pid: Pid,
     pub pgid: Lock<Pgid>,
     pub sid: Lock<Sid>,
@@ -79,11 +74,13 @@ pub struct Process {
     pub parent: Lock<Option<Weak<Process>>>,
     pub children: Lock<BTreeMap<Pid, Arc<Process>>>,
     pub threads: Lock<BTreeMap<Tid, Weak<Task>>>,
-    
+
     fd_table: Arc::new(Lock::new(FileDescriptorTable::new())),
     pub robust_list: Lock<Option<*mut RobustListHead>>,
     pub creds: Lock<Credentials>,
-    pub cwd: Arc<Lock<(Oid, String)>>,
+    // we keep the path used to traverse to this objet since its
+    // not unique, valuable user context, and very costly to ennumerate
+    pub cwd: Arc<Lock<(Oid, Path)>>,
 
     next_tid: AtomicU32,
 }
@@ -104,12 +101,12 @@ impl Process {
         Tid(v)
     }
 
-    pub fn next_pid() -> Pid {
-        Pid(self.kernel.pid_count,fetch_add(1, Ordering::SeqCst))
-    }
-
     pub fn get(&self, id: Pid) -> Option<Arc<Self>> {
-        self.kernel.tg_list.lock_save_irq().get(&id).and_then(|x| x.upgrade())
+        self.kernel
+            .tg_list
+            .lock_save_irq()
+            .get(&id)
+            .and_then(|x| x.upgrade())
     }
 }
 
@@ -118,8 +115,6 @@ impl Drop for Process {
         self.kernel.TG_LIST.lock()
     }
 }
-
-
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
