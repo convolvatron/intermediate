@@ -22,7 +22,6 @@ use crate::{
 pub mod boot;
 mod cpu_ops;
 mod exceptions;
-mod fdt;
 mod memory;
 
 pub struct Aarch64 {}

@@ -1,20 +1,19 @@
 #![no_std]
 #![allow(dead_code)]
 extern crate alloc;
-pub use alloc::{format, string::String, sync::Arc};
+pub use alloc::{format, string::String, sync::Arc, boxed::Box};
+use async_trait::async_trait;
 
 mod address;
 mod buffer;
 mod command;
 mod memory;
 mod value;
-pub mod syserr;
 
 pub use address::*;
 pub use buffer::*;
 pub use command::*;
 pub use value::*;
-pub use syserr::*;
 //pub use memory::*;
 
 #[derive(Debug)]
@@ -37,13 +36,6 @@ macro_rules! attr {
 macro_rules! err {
     ($oid:expr, $($arg:tt)*) => {
         crate::Error{cause:crate::format!($($arg)*), location:$oid, syserr: None}
-    }
-}
-
-#[macro_export]
-macro_rules! out_of_memory {
-    () => {
-        crate::Error{cause:"out of memory".to_string(), location:Oid(1), syserr: None}
     }
 }
 
@@ -78,7 +70,7 @@ const MONITOR: Oid = Oid(0x30000000000000000000000000000000);
 
 pub type DynStream<A> = Arc<dyn Stream<A>>;
 #[async_trait]
-trait Stream<A> {
+pub trait Stream<A> {
     async fn next(&self) -> Option<A>;
 }
 

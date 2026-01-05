@@ -28,7 +28,7 @@ const MAP_ANONYMOUS: u64 = 0x0020;
 
 /// Determines the minimal address that user-space is allowed to specify for
 /// MAP_FIXED{,_NOREPLACE}.
-static MMAP_MIN_ADDR: AtomicUsize = AtomicUsize::new(0x1000);
+// static MMAP_MIN_ADDR: AtomicUsize = AtomicUsize::new(0x1000);
 
 fn prot_to_perms(prot: u64) -> VMAPermissions {
     VMAPermissions {

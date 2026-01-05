@@ -1,7 +1,7 @@
 use crate::{
     process::{TASK_LIST, Task, TaskState},
     sched::{self, current_task},
-    SpinLock,
+    Lock,
 };
 use bitflags::bitflags;
 use crate::{
@@ -86,7 +86,7 @@ pub async fn sys_clone(
         let vm = if flags.contains(CloneFlags::CLONE_VM) {
             current_task.vm.clone()
         } else {
-            Arc::new(SpinLock::new(
+            Arc::new(Lock::new(
                 current_task.vm.lock_save_irq().clone_as_cow()?,
             ))
         };
@@ -94,7 +94,7 @@ pub async fn sys_clone(
         let files = if flags.contains(CloneFlags::CLONE_FILES) {
             current_task.fd_table.clone()
         } else {
-            Arc::new(SpinLock::new(
+            Arc::new(Lock::new(
                 current_task.fd_table.lock_save_irq().clone_for_exec(),
             ))
         };
@@ -102,7 +102,7 @@ pub async fn sys_clone(
         let cwd = if flags.contains(CloneFlags::CLONE_FS) {
             current_task.cwd.clone()
         } else {
-            Arc::new(SpinLock::new(current_task.cwd.lock_save_irq().clone()))
+            Arc::new(Lock::new(current_task.cwd.lock_save_irq().clone()))
         };
 
         let creds = current_task.creds.lock_save_irq().clone();
@@ -119,17 +119,17 @@ pub async fn sys_clone(
             vm,
             fd_table: files,
             cwd,
-            creds: SpinLock::new(creds),
-            ctx: SpinLock::new(Context::from_user_ctx(user_ctx)),
+            creds: Lock::new(creds),
+            ctx: Lock::new(Context::from_user_ctx(user_ctx)),
             priority: current_task.priority,
-            sig_mask: SpinLock::new(new_sigmask),
-            pending_signals: SpinLock::new(SigSet::empty()),
-            vruntime: SpinLock::new(*current_task.vruntime.lock_save_irq()),
-            exec_start: SpinLock::new(None),
-            deadline: SpinLock::new(*current_task.deadline.lock_save_irq()),
-            state: Arc::new(SpinLock::new(TaskState::Runnable)),
-            last_run: SpinLock::new(None),
-            robust_list: SpinLock::new(None),
+            sig_mask: Lock::new(new_sigmask),
+            pending_signals: Lock::new(SigSet::empty()),
+            vruntime: Lock::new(*current_task.vruntime.lock_save_irq()),
+            exec_start: Lock::new(None),
+            deadline: Lock::new(*current_task.deadline.lock_save_irq()),
+            state: Arc::new(Lock::new(TaskState::Runnable)),
+            last_run: Lock::new(None),
+            robust_list: Lock::new(None),
         }
     };
 

@@ -1,10 +1,11 @@
 use crate::{
     FileType,
-    memory::address::UA,
-    linux::Fd,
+    UserAddress,
+    Fd,
     current_task,
+    linuxerr,
 };
-use protocol::{Buffer, linuxerr, DynEntity, Error, get_string, get_u64};
+use protocol::{Buffer, DynEntity, Error, get_string, get_u64};
 
 // merge with file type
 #[repr(u8)]
@@ -73,7 +74,7 @@ fn write_dirent(dirent: DynEntity, dest:Buffer) -> Result<usize, Error> {
     Ok(padded_reclen)
 }
 
-pub async fn sys_getdents64(fd: Fd, mut ubuf: UA, size: u32) -> Result<usize, Error> {
+pub async fn sys_getdents64(fd: Fd, mut ubuf: UserAddress, size: u32) -> Result<usize, Error> {
     let task = current_task();
     let file = task
         .fd_table

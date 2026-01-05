@@ -11,19 +11,27 @@ pub mod general;
 mod interrupts;
 mod memory;
 mod sync;
-mod linux;
 mod ctx;
 
 pub use general::*;
 pub use sync::*;
 pub use memory::*;
-pub use linux::*;
 pub use ctx::*;
 
 pub use protocol::{Error, err, Buffer};
 pub use alloc::format;
 
 
+pub type ProcVM = ProcessVM<<ArchImpl as VirtualMemory>::ProcessAddressSpace>;
+
+
+#[macro_export]
+macro_rules! out_of_memory {
+    () => {{
+        use protocol::Oid;
+        crate::Error{cause:"out of memory".to_string(), location:Oid(1), syserr: None}
+    }}
+}
 
 /// Represents a fixed point in monotonic time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

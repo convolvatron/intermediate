@@ -1,6 +1,7 @@
-use protocol::{linuxerr, Error};
+use protocol::{Error};
 use core::ptr::NonNull;
 use crate::{
+    out_of_memory,
     console,
     arch::arm64::memory::{
         HEAP_ALLOCATOR,
@@ -27,12 +28,10 @@ const KERNEL_HEAP_SZ: usize = 64 * 1024 * 1024; // 64 MiB
 
 pub fn setup_allocator(dtb_ptr: TPA<u8>, image_start: PA, image_end: PA) -> Result<(), Error> {
     console!("A\n");
-    let dt = unsafe { fdt_parser::Fdt::from_ptr(NonNull::new_unchecked(dtb_ptr.as_ptr_mut())) }
-        .map_err(|_| linuxerr!(EINVAL))?;
-
     let mut alloc = INITIAL_ALLOCATOR.lock_save_irq();
     let alloc = alloc.as_mut().unwrap();
     console!("B\n");
+    /*
     dt.memory().try_for_each(|mem| -> Result<(), Error> {
         mem.regions().try_for_each(|region| -> Result<(), Error> {
             let start_addr = PA::from_value(region.address.addr());
@@ -47,53 +46,14 @@ pub fn setup_allocator(dtb_ptr: TPA<u8>, image_start: PA, image_end: PA) -> Resu
             Ok(())
         })
     })?;
-
+     */
+    
     // If we couldn't find any memory regions, we cannot continue.
     if alloc.base_ram_base_address().is_none() {
-        return Err(linuxerr!(ENOMEM));
+        return Err(out_of_memory!());
     }
-
-    dt.memory_reservation_block()
-        .try_for_each(|res| -> Result<(), Error> {
-            let start_addr = PA::from_value(res.address.addr());
-
-            info!(
-                "Adding reservation from FDT {start_addr} (0x{:x} bytes)",
-                res.size
-            );
-
-            alloc.add_reservation(PhysMemoryRegion::new(start_addr, res.size))?;
-
-            Ok(())
-        })?;
-
-    // Reserve the kernel address.
-    info!("Reserving kernel text {image_start} - {image_end}");
-    alloc.add_reservation(PhysMemoryRegion::from_start_end_address(
-        image_start,
-        image_end,
-    ))?;
-
-    // Reserve the DTB.
-    info!("Reserving FDT {dtb_ptr} (0x{:04x} bytes)", dt.total_size());
-    alloc.add_reservation(PhysMemoryRegion::new(dtb_ptr.to_untyped(), dt.total_size()))?;
-
-    // Reserve the initrd.
-    if let Some(chosen) = dt.find_nodes("/chosen").next()
-        && let Some(start_addr) = chosen
-            .find_property("linux,initrd-start")
-            .map(|prop| prop.u64())
-        && let Some(end_addr) = chosen
-            .find_property("linux,initrd-end")
-            .map(|prop| prop.u64())
-    {
-        info!("Reserving initrd 0x{start_addr:X} - 0x{end_addr:X}");
-        alloc.add_reservation(PhysMemoryRegion::from_start_end_address(
-            PA::from_value(start_addr as _),
-            PA::from_value(end_addr as _),
-        ))?;
-    }
-
+    // there were a bunch of carveouts, we're not pretending to be contiguous,
+    // so ... 
     set_kimage_start(image_start);
 
     Ok(())

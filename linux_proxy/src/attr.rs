@@ -1,5 +1,6 @@
-use protocol::{Error, linuxerr};
+use protocol::{Error};
 use crate::{
+    linuxerr,
     Gid, Uid, FileType,
 };
 

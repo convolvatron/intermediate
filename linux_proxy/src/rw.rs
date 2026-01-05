@@ -1,14 +1,15 @@
 use alloc::{string::ToString, boxed::Box};
+use protocol::Error;
 
 use crate::{
-    Error,
     execute,
-    linux::Fd,
+    Fd,
+    linuxerr,
     current_task,
-    memory::address::UA,
+    UserAddress,
 };
 
-use protocol::{Buffer, Command, Address, Attribute, attr, linuxerr};
+use protocol::{Buffer, Command, Address, Attribute, attr};
 
 pub async fn sys_write(fd: Fd, _user_buf: UA, count: usize) -> Result<usize, Error> {
     let file = current_task()

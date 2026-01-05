@@ -1,3 +1,7 @@
+#![no_std]
+extern crate alloc;
+
+pub mod kernel;
 pub mod attr;
 pub mod dir;
 pub mod path;
@@ -5,20 +9,28 @@ pub mod fd_table;
 pub mod ids;
 pub mod creds;
 pub mod pid;
-pub mod thread_group;
+pub mod process;
 //pub mod wait;
 pub mod rsrc_lim;
 pub mod task;
 pub mod rw;
+pub mod syserr;
 
 pub use fd_table::*;
 pub use ids::*;
 pub use creds::*;
-pub use thread_group::*;
+pub use process::*;
 pub use task::*;
 pub use rsrc_lim::*;
 pub use pid::*;
-//pub use wait::*;
+pub use syserr::*;
+pub use kernel::*;
+
+pub type UserAddress = u64;
+
+pub struct Lock<A> {
+    _a :PhantomData<A>,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct CharDevDescriptor {

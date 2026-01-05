@@ -1,7 +1,7 @@
 use crate::{
     current_task,
-    memory::address::TUA,
-    linux::Pid,
+    UserAddress,
+    Pid,
 };
 
 use protocol::{Error, err, Oid};
@@ -47,8 +47,8 @@ pub struct RLimit {
 pub async fn sys_prlimit64(
     pid: Pid,
     resource: u32,
-    _new_rlim: TUA<RLimit>,
-    _old_rlim: TUA<RLimit>,
+    _new_rlim: *const RLimit,
+    _old_rlim: *mut RLimit,
 ) -> Result<usize, Error> {
     if pid == 0 {
         current_task().process.clone()

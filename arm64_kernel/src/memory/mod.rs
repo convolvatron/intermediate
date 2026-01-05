@@ -1,5 +1,4 @@
 pub mod address;
-//pub mod kbuf;
 pub mod page;
 pub mod page_alloc;
 pub mod permissions;
@@ -24,7 +23,6 @@ use crate::memory::{
 };
 
 pub mod fault;
-//pub mod uaccess;
 
 pub type PageOffsetTranslator = crate::memory::pg_offset::PageOffsetTranslator<ArchImpl>;
 

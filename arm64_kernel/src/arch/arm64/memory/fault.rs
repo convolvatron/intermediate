@@ -1,6 +1,5 @@
 use protocol::{Error};
 use crate::{
-    current_task,
     UserAddressSpace,
     memory::{address::VA, proc_vm::vmarea::AccessKind, region::VirtMemoryRegion},    
     arch::arm64::{
@@ -9,7 +8,7 @@ use crate::{
             esr::{AbortIss, Exception, IfscCategory},
         },
     },
-    memory::fault::{FaultResolution, handle_demand_fault, handle_protection_fault},
+    memory::fault::{handle_demand_fault, handle_protection_fault},
 };
 
 #[repr(C)]
@@ -70,27 +69,7 @@ pub fn handle_kernel_mem_fault(exception: Exception, info: AbortIss, state: &mut
 }
 
 pub fn handle_mem_fault(exception: Exception, info: AbortIss) {
-    match run_mem_fault_handler(exception, info) {
-        Ok(FaultResolution::Resolved) => {}
-        // TODO: Implement proc signals.
-        Ok(FaultResolution::Denied) => panic!(
-            "SIGSEGV on process {} {:?} PC: {:x}",
-            current_task().process.tgid,
-            exception,
-            current_task().ctx.lock_save_irq().user().elr_el1
-        ),
-        // If the page fault involves sleepy kernel work, we can
-        // spawn that work on the process, since there is no other
-        // kernel work happening.
-        /*
-        Ok(FaultResolution::Deferred(fut)) => spawn_kernel_work(async {
-            if Box::into_pin(fut).await.is_err() {
-                panic!("Page fault defered error, SIGBUS on process");
-            }
-    }),
-        */
-        Err(_) => panic!("Page fault handler error, SIGBUS on process"),
-    }
+    run_mem_fault_handler(exception, info);    
 }
 
 fn determine_access_kind(exception: Exception, info: AbortIss) -> AccessKind {

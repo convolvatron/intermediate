@@ -7,7 +7,6 @@ use crate::{
     arch::ArchImpl,
     interrupts::get_interrupt_root,
     ksym_pa,
-    current_task,
 };
 use aarch64_cpu::registers::{CPACR_EL1, ReadWriteable, VBAR_EL1};
 use core::{arch::global_asm, fmt::Display};

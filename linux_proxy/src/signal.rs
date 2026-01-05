@@ -12,7 +12,7 @@ use crate::{
     memory::{address::UA, region::UserMemoryRegion},
     linux::{KSignalAction,UserspaceSigAction},
     memory::uaccess::UserCopyable,
-    SpinLock,
+    Lock,
     KernelError};
 
 bitflags! {
@@ -193,7 +193,7 @@ impl AltSigStack {
 }
 
 pub struct SignalState {
-    action: Arc<SpinLock<SigActionSet>>,
+    action: Arc<Lock<SigActionSet>>,
     pending: SigSet,
     pub alt_stack: Option<AltSigStack>,
 }
@@ -211,7 +211,7 @@ impl Clone for SignalState {
 impl SignalState {
     pub fn new_ignore() -> Self {
         Self {
-            action: Arc::new(SpinLock::new(SigActionSet([SigActionState::Ignore; 64]))),
+            action: Arc::new(Lock::new(SigActionSet([SigActionState::Ignore; 64]))),
             pending: SigSet::empty(),
             alt_stack: None,
         }
@@ -219,7 +219,7 @@ impl SignalState {
 
     pub fn new_default() -> Self {
         Self {
-            action: Arc::new(SpinLock::new(SigActionSet([SigActionState::Default; 64]))),
+            action: Arc::new(Lock::new(SigActionSet([SigActionState::Default; 64]))),
             pending: SigSet::empty(),
             alt_stack: None,
         }
@@ -235,7 +235,7 @@ impl SignalState {
 
     pub fn clone_copying_action_table(&self) -> Self {
         Self {
-            action: Arc::new(SpinLock::new(self.action.lock_save_irq().clone())),
+            action: Arc::new(Lock::new(self.action.lock_save_irq().clone())),
             pending: SigSet::empty(),
             alt_stack: None,
         }

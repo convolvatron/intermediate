@@ -1,11 +1,12 @@
 use core::ptr;
 
-use protocol::{Error, linuxerr};
+use protocol::{Error};
 
 use aarch64_cpu::asm::barrier;
 use aarch64_cpu::registers::{MAIR_EL1, SCTLR_EL1, TCR_EL1, TTBR0_EL1, TTBR1_EL1};
 
 use crate::{
+    out_of_memory,
     arch::arm64::memory::{
         pg_descriptors::MemoryType,
         pg_tables::{
@@ -67,7 +68,7 @@ impl StaticPageAllocator {
 impl PageAllocator for StaticPageAllocator {
     fn allocate_page_table<T: PgTable>(&mut self) -> Result<TPA<PgTableArray<T>>, Error> {
         if self.allocated == STATIC_PAGE_COUNT {
-            return Err(linuxerr!(ENOMEM));
+            return Err(out_of_memory!());
         }
 
         let ret = self.peek::<PgTableArray<T>>();

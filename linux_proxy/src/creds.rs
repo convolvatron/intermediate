@@ -3,8 +3,9 @@ use core::convert::Infallible;
 
 use crate::{
     current_task,
-    linux::{Uid, Gid},
-    memory::address::TUA,
+    Uid,
+    Gid,
+    UserAddress,
 };
 
 #[derive(Clone, PartialEq, Eq)]
@@ -84,7 +85,7 @@ pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
     Ok(tid as _)
 }
 
-pub async fn sys_getresuid(_ruid: TUA<Uid>, _euid: TUA<Uid>, _suid: TUA<Uid>) -> Result<usize, Error> {
+pub async fn sys_getresuid(_ruid: UserAddress, _euid: UserAddress, _suid: UserAddress) -> Result<usize, Error> {
     let task = current_task();
     let creds = task.creds.lock_save_irq().clone();
 
@@ -95,7 +96,7 @@ pub async fn sys_getresuid(_ruid: TUA<Uid>, _euid: TUA<Uid>, _suid: TUA<Uid>) ->
     Ok(0)
 }
 
-pub async fn sys_getresgid(rgid: TUA<Gid>, egid: TUA<Gid>, sgid: TUA<Gid>) -> Result<usize, Error> {
+pub async fn sys_getresgid(rgid: UserAddress, egid: UserAddress, sgid: UserAddress) -> Result<usize, Error> {
     let task = current_task();
     let _creds = task.creds.lock_save_irq().clone();
 

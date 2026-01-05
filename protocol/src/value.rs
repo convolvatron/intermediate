@@ -93,6 +93,7 @@ pub fn get_string(_e:DynEntity, _a:Attribute) -> Result<String, Error>{
     Ok("just kidding".to_string())
 }
 
-pub fn get_stream(_e:DynEntity, _a:Attribute) -> Result<DynStream<Value>, Error> {
+pub fn get_attributes(_e:DynEntity) -> Result<DynStream<Attribute>, Error> {
+    Err(err!(Oid(1), "foo"))
 }
 
