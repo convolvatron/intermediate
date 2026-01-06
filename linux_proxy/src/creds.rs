@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 use protocol::Error;
 
-use crate::{Gid, Uid, UserAddress, Task};
+use crate::{Gid, Uid, Task};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Credentials {
@@ -82,30 +82,28 @@ pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
 
 pub async fn sys_getresuid(
     t:Task,
-    _ruid: *mut Uid,
-    _euid: *mut Uid,
-    _suid: *mut Uid,
+    ruid: *mut Uid,
+    euid: *mut Uid,
+    suid: *mut Uid,
 ) -> Result<usize, Error> {
-    let creds = t.process.creds.lock_save_irq().clone();
+    let creds = t.process.creds.lock().clone();
 
-    /*    copy_to_user(ruid, creds.uid).await?;
-        copy_to_user(euid, creds.euid).await?;
-        copy_to_user(suid, creds.suid).await?;
-    */
+    *ruid = creds.uid;
+    *euid = creds.euid;
+    *suid = creds.suid;        
+    
     Ok(0)
 }
 
 pub async fn sys_getresgid(
-    rgid: UserAddress,
-    egid: UserAddress,
-    sgid: UserAddress,
+    t:Task,
+    rgid: *mut Gid,
+    egid: *mut Gid,
+    sgid: *mut Gid
 ) -> Result<usize, Error> {
-    let task = current_task();
-    let _creds = task.creds.lock_save_irq().clone();
-
-    /*    copy_to_user(rgid, creds.gid).await?;
-        copy_to_user(egid, creds.egid).await?;
-        copy_to_user(sgid, creds.sgid).await?;
-    */
+    let creds = t.process.creds.lock().clone();
+    *rgid = creds.gid;
+    *egid = creds.egid;
+    *sgid = creds.sgid;        
     Ok(0)
 }

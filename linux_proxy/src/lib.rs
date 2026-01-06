@@ -38,7 +38,17 @@ macro_rules! perr {
 }
 
 pub struct Lock<A> {
-    _a: PhantomData<A>,
+    d: PhantomData<A>,
+}
+
+impl<A> Lock<A> {
+    fn new(d:A) -> Lock<A>{
+        Lock{}
+    }
+    
+    fn lock(&self) -> A {
+        self.d
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]

@@ -1,4 +1,4 @@
-use crate::{Buffer, Error, err, DynEntity, DynStream};
+use crate::{Buffer, DynEntity, DynStream, Error, err};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
@@ -85,15 +85,14 @@ impl Encodable for Value {
 }
 
 // oid or dyn?
-pub fn get_u64(_e:DynEntity, _a:Attribute) -> Result<u64, Error>{
+pub fn get_u64(_e: DynEntity, _a: Attribute) -> Result<u64, Error> {
     Ok(1)
 }
 
-pub fn get_string(_e:DynEntity, _a:Attribute) -> Result<String, Error>{
+pub fn get_string(_e: DynEntity, _a: Attribute) -> Result<String, Error> {
     Ok("just kidding".to_string())
 }
 
-pub fn get_attributes(_e:DynEntity) -> Result<DynStream<Attribute>, Error> {
+pub fn get_attributes(_e: DynEntity) -> Result<DynStream<Attribute>, Error> {
     Err(err!(Oid(1), "foo"))
 }
-

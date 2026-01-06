@@ -1,6 +1,7 @@
 use crate::{
     Credentials, Kernel, Lock, linuxerr,
     FileDescriptorEntry,
+    Fd,
     Pid,
     Pgid,
     Path,
@@ -39,6 +40,7 @@ pub enum ProcessState {
 
 pub struct Process {
     pub kernel: Arc<Kernel>,
+    pub myself: Oid,
     pub pid: Pid,
     pub pgid: Lock<Pgid>,
     pub sid: Lock<Sid>,
@@ -47,13 +49,12 @@ pub struct Process {
     pub parent: Lock<Option<Weak<Process>>>,
     pub children: Lock<BTreeMap<Pid, Arc<Process>>>,
     pub threads: Lock<BTreeMap<Tid, Weak<Task>>>,
-
-    fd_table: Arc<Vec<FileDescriptorEntry>>,
+    pub fd_table: Lock<Vec<FileDescriptorEntry>>,
     pub robust_list: Lock<Option<*mut RobustListHead>>,
     pub creds: Lock<Credentials>,
     // we keep the path used to traverse to this objet since its
     // not unique, valuable user context, and very costly to ennumerate
-    pub cwd: Arc<Lock<(Oid, Path)>>,
+    pub cwd: Lock<(Oid, Path)>,
     next_fd_hint: usize,
     next_tid: AtomicU32,
 }
@@ -65,21 +66,17 @@ impl Process {
     // == PID, since that is defined as the main, root thread.
     pub fn next_tid(&self) -> Tid {
         let mut v = self.next_tid.fetch_add(1, Ordering::SeqCst);
-
+        
         // Skip the PID.
         if v == self.pid.value() {
             v = self.next_tid.fetch_add(1, Ordering::SeqCst)
         }
-
+        
         Tid(v)
     }
-
-    pub fn get(&self, id: Pid) -> Option<Arc<Self>> {
-        self.kernel
-            .tg_list
-            .lock_save_irq()
-            .get(&id)
-            .and_then(|x| x.upgrade())
+    
+    pub fn get_fd(&self, fd: Fd) -> Result<FileDescriptorEntry, Error> {
+        Ok(self.fd_Table.get(fd.0 as usize))
     }
 }
 
@@ -103,13 +100,12 @@ pub struct RobustListHead {
     list_op_pending: RobustList,
 }
 
-pub async fn sys_set_robust_list(head: *const RobustListHead, len: usize) -> Result<usize, Error> {
+pub async fn sys_set_robust_list(t:Task, head: *mut RobustListHead, len: usize) -> Result<usize, Error> {
     if len != size_of::<RobustListHead>() {
         return Err(linuxerr!(EINVAL));
     }
 
-    let task = current_task();
-    task.robust_list.lock_save_irq().replace(head);
+    t.process.robust_list.lock().replace(head);
 
     Ok(0)
 }

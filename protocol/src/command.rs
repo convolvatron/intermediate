@@ -1,4 +1,6 @@
-use crate::{Address, Attribute, Buffer, ChangeSet, DynResolver, Error, Oid, Value, Variable, Encodable};
+use crate::{
+    Address, Attribute, Buffer, ChangeSet, DynResolver, Encodable, Error, Oid, Value, Variable, err,
+};
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 
 #[repr(u8)]
@@ -33,39 +35,69 @@ pub enum Command {
     Get(Oid, Attribute, Value, Variable) = 1,
     Set(Oid, Attribute, Value, Variable) = 2,
     Copy(Address, Address, usize, Variable) = 3,
-    Create(Variable, Variable) = 4,
+    // i dont think create has a status right now ??
+    Create(Variable) = 4,
 }
 
 // xxx - discriminant issues resulting in an unforuntate duplication that
-// requires manual consistency
-impl Command {
-    
-    pub fn get(b: &mut Buffer, e: Oid, a: Attribute, v: Value, r: Variable) {
-        b.write(&[1]);
-        e.encode(b);
-        a.encode(b);
-        v.encode(b);
-        r.encode(b);
+// requires manual consistency for the codepoint
+impl Encodable for Command {
+    fn decode(source: &mut Buffer) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
+        match source.read(1)?[0] {
+            1 => Ok(Command::Get(
+                Oid::decode(source)?,
+                Value::decode(source)?,
+                Value::decode(source)?,
+                Variable::decode(source)?,
+            )),
+            2 => Ok(Command::Set(
+                Oid::decode(source)?,
+                Value::decode(source)?,
+                Value::decode(source)?,
+                Variable::decode(source)?,
+            )),
+            3 => Ok(Command::Copy(
+                Address::decode(source)?,
+                Address::decode(source)?,
+                u64::from_be_bytes(source.read(8)?).map_err(|_| err!("copy length decode")),
+                Variable::decode(source)?,
+            )),
+            4 => Ok(Command::Create(Variable::decode(source)?)),
+            _ => err!(""),
+        }
     }
 
-    pub fn set(b: &mut Buffer, e: Oid, a: Attribute, v: Value, r: Variable) {
-        b.write(&[2]);
-        e.encode(b);
-        a.encode(b);
-        v.encode(b);
-        r.encode(b);
-    }
-
-    pub fn copy(b: &mut Buffer, source: Address, dest: Address, length: usize, r: Variable) {
-        b.write(&[3]);
-        source.encode(b);
-        dest.encode(b);
-        b.write(&length.to_be_bytes());
-        r.encode(b);
-    }
-
-    pub fn create(b: &mut Buffer, _r: Value) {
-        b.write(&[4]);
+    fn encode(&self, b: &mut Buffer) {
+        match &self {
+            Command::Get(e, a, v, s) => {
+                b.write(&[1]);
+                e.encode(b);
+                a.encode(b);
+                v.encode(b);
+                s.encode(b);
+            }
+            Command::Set(e, a, v, s) => {
+                b.write(&[2]);
+                e.encode(b);
+                a.encode(b);
+                v.encode(b);
+                s.encode(b);
+            }
+            Command::Copy(source, dest, length, s) => {
+                b.write(&[3]);
+                source.encode(b);
+                dest.encode(b);
+                b.write(&length.to_be_bytes());
+                s.encode(b);
+            }
+            Command::Create(dest) => {
+                b.write(&[4]);
+                dest.encode(b);
+            }
+        }
     }
 }
 

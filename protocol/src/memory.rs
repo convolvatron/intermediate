@@ -7,7 +7,7 @@ struct Memory {
 
 impl Entity for Memory {
     fn keys(&self) -> alloc::vec::Vec<Attribute> {
-        self.attributes.keys().map(|x|x.clone()).collect()
+        self.attributes.keys().map(|x| x.clone()).collect()
     }
 
     fn get(&self, _a: Attribute) -> Result<Value, Error> {

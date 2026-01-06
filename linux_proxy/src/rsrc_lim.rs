@@ -41,9 +41,9 @@ pub struct RLimit {
 }
 
 pub async fn sys_prlimit64(
-    t:Task,
-    pid: Pid,
-    resource: u32,
+    _t:Task,
+    _pid: Pid,
+    _resource: u32,
     _new_rlim: *const RLimit,
     _old_rlim: *mut RLimit,
 ) -> Result<usize, Error> {

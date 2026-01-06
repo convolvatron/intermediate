@@ -1,30 +1,30 @@
 #![no_std]
 #![allow(dead_code)]
 extern crate alloc;
-pub use alloc::{format, string::String, sync::Arc, boxed::Box};
+pub use alloc::{boxed::Box, format, string::String, sync::Arc};
 use async_trait::async_trait;
 
 mod address;
 mod buffer;
 mod command;
+mod error;
 mod memory;
 mod value;
-mod error;
 
 pub use address::*;
 pub use buffer::*;
 pub use command::*;
-pub use value::*;
 pub use error::*;
+pub use value::*;
 //pub use memory::*;
 
 #[macro_export]
 macro_rules! attribute {
-    ($sattr:expr) => {
+    ($sattr:expr) => {{
+        use alloc::string::ToString;
         Attribute($sattr.to_string())
-    }
+    }};
 }
-
 
 type DynResolver = Arc<dyn Resolver>;
 pub trait Resolver {
@@ -49,15 +49,13 @@ pub trait Entity {
 }
 
 // there a whole .. allocation and routing thing that would have to be built. this is our
-// silly placeholder. 
+// silly placeholder.
 const TARGET: Oid = Oid(0x10000000000000000000000000000000);
 const SYSPROXY: Oid = Oid(0x20000000000000000000000000000000);
 const MONITOR: Oid = Oid(0x30000000000000000000000000000000);
-
 
 pub type DynStream<A> = Arc<dyn Stream<A>>;
 #[async_trait]
 pub trait Stream<A> {
     async fn next(&self) -> Option<A>;
 }
-

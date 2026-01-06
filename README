@@ -11,6 +11,9 @@ https://github.com/hexagonal-sun/moss-kernel, with heavy and fairly gratuitous
 modifications. Modifications which should be considered as suggested changes to
 moss itself, its just that the intent here is somewhat different.
 
+In the process we lost thread support. it wasn't entirely there, but now we look more
+like BSD on a 68k.
+
 
         application
              |

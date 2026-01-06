@@ -1,5 +1,4 @@
 use crate::{OpenFlags, perr, Process};
-use alloc::{sync::Arc};
 use protocol::{Error, Oid};
 
 #[repr(C)]
@@ -44,14 +43,6 @@ pub struct FileDescriptorEntry {
 const MAX_FDS: usize = 8192;
 
 impl Process {
-    /// Gets the file object associated with a given file descriptor.
-    pub fn get_fd(&self, fd: Fd) -> Option<Arc<FileDescriptorEntry>> {
-        self.entries
-            .get(fd.0 as usize)
-            .and_then(|entry| entry.as_ref())
-            .map(|entry| entry.clone())
-    }
-
     /// Inserts a new file into the table, returning the new file descriptor.
     pub fn insert_fd(&mut self, obj: Oid, oflags: OpenFlags) -> Result<Fd, Error> {
         let fd = self.find_free_fd()?;
@@ -108,7 +99,7 @@ impl Process {
         }
 
         // We didn't find a free slot in the existing capacity
-        let next = self.entries.len();
+        let next = self.fd_table.len();
 
         if next >= MAX_FDS {
             // this should be in the process context

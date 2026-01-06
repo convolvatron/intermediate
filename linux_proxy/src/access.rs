@@ -1,8 +1,7 @@
 use core::ffi::c_char;
 use crate::{
-    linux::Fd,
+    Fd,
     KernelError,
-    memory::address::TUA,
 };
 
 pub async fn sys_faccessat(dirfd: Fd, path: TUA<c_char>, mode: i32) -> Result<usize, KernelError> {

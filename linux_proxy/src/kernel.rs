@@ -1,5 +1,5 @@
-use crate::Pid;
-use alloc::vec::Vec;
+use crate::{Pid, Process};
+use alloc::{vec::Vec, sync::Arc};
 use core::sync::atomic::Ordering;
 use protocol::{Command, Error};
 
@@ -11,6 +11,11 @@ pub struct Kernel {
 }
 
 impl Kernel {
+    // might just do these lookups in eav space rather than implement
+    // it as DynEntity here
+    pub fn get_process(&self, id: Pid) -> Option<Arc<Process>> {
+        None
+    }
     pub fn next_pid(&self) -> Pid {
         Pid(self.kernel.pid_count, fetch_add(1, Ordering::SeqCst))
     }

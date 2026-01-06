@@ -9,7 +9,6 @@ pub struct Error {
     // file and line can we do?
 }
 
-    
 #[macro_export]
 macro_rules! err {
     ($oid:expr, $($arg:tt)*) => {{

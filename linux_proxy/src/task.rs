@@ -1,5 +1,3 @@
-use protocol::{Oid};
-
 use crate::{
     Lock, Pid, Process, 
 };
@@ -13,10 +11,10 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn new(cwd: Oid) -> Self {
+    pub fn new(p: Process) -> Self {
         Self {
             tid: Tid(1),
-            process: ThreadGroupBuilder::new(Tgid::init()).build(),
+            process: p,
             state: Arc::new(Lock::new(TaskState::Runnable)),
         }
     }
