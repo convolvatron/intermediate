@@ -1,31 +1,32 @@
 use alloc::{boxed::Box, string::ToString, vec};
-use crate::{Fd, UserAddress, Task};
-use protocol::{Address, Attribute, Buffer, Command, attribute, Error};
+use crate::{Fd, AddressSpace, Task, Runtime};
+use protocol::{Address, Attribute, Buffer, Command, attribute, Error, Value};
 
 // partial writes?
 // update pos
 
-pub async fn sys_write(t: Task, fd: Fd, user_buf: UserAddress, count: usize) -> Result<usize, Error> {
+pub async fn sys_write<R:Runtime>(t: Task<R>, fd: Fd, user_buf: AddressSpace, count: usize) -> Result<usize, Error> {
     let file = t.process.get_fd(fd)?;
-    let program = vec!(Command::copy(
-        
-        Address::Offset(
-            Box::new(Address::Entity(t.process.myself, Attribute("vma".to_string()))),
-            user_buf as u64,
-        ),
-        
-        Address::Offset(
-            Box::new(Address::Entity(file.obj, Attribute("contents".to_string()))),
-            file.pos,
-        ),
-        count,
-        0,
-    ));
-    t.process.kernel.execute(program);
+    if let AddressSpace::User(addr) = user_buf {
+        let program = vec!(Command::copy(
+            Address::Offset(
+                Box::new(Address::Entity(t.process.myself, attribute!("vma")), addr)
+            ),
+            
+            Address::Offset(
+                Box::new(Address::Entity(file.obj, attribute!("contents"))),
+                file.pos,
+            ),
+            count,
+            Value::Variable(0),
+        ));
+        t.process.kernel.execute(program);
+    }
+
     Ok(count)
 }
 
-pub async fn sys_read(t:Task, fd: Fd, user_buf: UserAddress, count: usize) -> Result<usize, Error> {
+pub async fn sys_read<R:Runtime>(t:Task<R>, fd: Fd, user_buf: AddressSpace, count: usize) -> Result<usize, Error> {
     let file = t.process.get_fd(fd)?;
 
     // translate user_buf to 'physical'

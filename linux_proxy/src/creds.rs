@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 use protocol::Error;
 
-use crate::{Gid, Uid, Task};
+use crate::{Gid, Uid, Task, Runtime, Lockable};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Credentials {
@@ -80,8 +80,8 @@ pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
     Ok(tid as _)
 }
 
-pub async fn sys_getresuid(
-    t:Task,
+pub async fn sys_getresuid<R:Runtime>(
+    t:Task<R>,
     ruid: *mut Uid,
     euid: *mut Uid,
     suid: *mut Uid,
@@ -95,8 +95,8 @@ pub async fn sys_getresuid(
     Ok(0)
 }
 
-pub async fn sys_getresgid(
-    t:Task,
+pub async fn sys_getresgid<R:Runtime>(
+    t:Task<R>,
     rgid: *mut Gid,
     egid: *mut Gid,
     sgid: *mut Gid

@@ -1,5 +1,6 @@
 use crate::{
-    Credentials, Kernel, Lock, linuxerr,
+    Runtime,
+    Credentials, Kernel, linuxerr,
     FileDescriptorEntry,
     Fd,
     Pid,
@@ -38,30 +39,30 @@ pub enum ProcessState {
     Exiting, // In the middle of being torn down
 }
 
-pub struct Process {
-    pub kernel: Arc<Kernel>,
+pub struct Process<R:Runtime> {
+    pub kernel: Arc<Kernel<R>>,
     pub myself: Oid,
     pub pid: Pid,
-    pub pgid: Lock<Pgid>,
-    pub sid: Lock<Sid>,
-    pub state: Lock<ProcessState>,
-    pub umask: Lock<u32>,
-    pub parent: Lock<Option<Weak<Process>>>,
-    pub children: Lock<BTreeMap<Pid, Arc<Process>>>,
-    pub threads: Lock<BTreeMap<Tid, Weak<Task>>>,
-    pub fd_table: Lock<Vec<FileDescriptorEntry>>,
-    pub robust_list: Lock<Option<*mut RobustListHead>>,
-    pub creds: Lock<Credentials>,
+    pub pgid: R::Lock<Pgid>,
+    pub sid: R::Lock<Sid>,
+    pub state: R::Lock<ProcessState>,
+    pub umask: R::Lock<u32>,
+    pub parent: R::Lock<Option<Weak<Process<R>>>>,
+    pub children: R::Lock<BTreeMap<Pid, Arc<Process<R>>>>,
+    pub threads: R::Lock<BTreeMap<Tid, Weak<Task<R>>>>,
+    pub fd_table: R::Lock<Vec<FileDescriptorEntry>>,
+    pub robust_list: R::Lock<Option<*mut RobustListHead>>,
+    pub creds: R::Lock<Credentials>,
     // we keep the path used to traverse to this objet since its
     // not unique, valuable user context, and very costly to ennumerate
-    pub cwd: Lock<(Oid, Path)>,
+    pub cwd: R::Lock<(Oid, Path)>,
     next_fd_hint: usize,
     next_tid: AtomicU32,
 }
 
-unsafe impl Send for Process {}
+unsafe impl<R:Runtime> Send for Process<R> {}
 
-impl Process {
+impl<R:Runtime> Process<R> {
     // Return the next avilable thread id. Will never return a thread who's ID
     // == PID, since that is defined as the main, root thread.
     pub fn next_tid(&self) -> Tid {
@@ -80,7 +81,7 @@ impl Process {
     }
 }
 
-impl Drop for Process {
+impl<R:Runtime> Drop for Process<R> {
     fn drop(&mut self) {
         self.kernel.TG_LIST.lock()
     }
@@ -100,7 +101,7 @@ pub struct RobustListHead {
     list_op_pending: RobustList,
 }
 
-pub async fn sys_set_robust_list(t:Task, head: *mut RobustListHead, len: usize) -> Result<usize, Error> {
+pub async fn sys_set_robust_list<R:Runtime>(t:Task<R>, head: *mut RobustListHead, len: usize) -> Result<usize, Error> {
     if len != size_of::<RobustListHead>() {
         return Err(linuxerr!(EINVAL));
     }

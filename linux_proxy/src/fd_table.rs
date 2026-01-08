@@ -1,4 +1,4 @@
-use crate::{OpenFlags, perr, Process};
+use crate::{OpenFlags, perr, Process, Runtime};
 use protocol::{Error, Oid};
 
 #[repr(C)]
@@ -42,7 +42,7 @@ pub struct FileDescriptorEntry {
 
 const MAX_FDS: usize = 8192;
 
-impl Process {
+impl<R:Runtime> Process<R> {
     /// Inserts a new file into the table, returning the new file descriptor.
     pub fn insert_fd(&mut self, obj: Oid, oflags: OpenFlags) -> Result<Fd, Error> {
         let fd = self.find_free_fd()?;

@@ -142,7 +142,7 @@ macro_rules! linuxerr {
     ($code:tt) => {{
         use alloc::string::ToString;
         Error {
-            location: protocol::Oid(1),
+            location: None,
             cause: "syscall".to_string(),
             syserr: Some(crate::LinuxError::$code as u8),
         }

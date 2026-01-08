@@ -49,24 +49,24 @@ impl Encodable for Command {
         match source.read(1)?[0] {
             1 => Ok(Command::Get(
                 Oid::decode(source)?,
-                Value::decode(source)?,
+                Attribute::decode(source)?,
                 Value::decode(source)?,
                 Variable::decode(source)?,
             )),
             2 => Ok(Command::Set(
                 Oid::decode(source)?,
-                Value::decode(source)?,
+                Attribute::decode(source)?,
                 Value::decode(source)?,
                 Variable::decode(source)?,
             )),
             3 => Ok(Command::Copy(
                 Address::decode(source)?,
                 Address::decode(source)?,
-                u64::from_be_bytes(source.read(8)?).map_err(|_| err!("copy length decode")),
+                u64::from_be_bytes(source.read(8)?.try_into().expect("word")) as usize,
                 Variable::decode(source)?,
             )),
             4 => Ok(Command::Create(Variable::decode(source)?)),
-            _ => err!(""),
+            _ => Err(err!("invalid protocol command code")),
         }
     }
 
@@ -178,7 +178,7 @@ fn interpret(
 
             Command::Copy(_source, _dest, _length, _result) => {}
 
-            Command::Create(new, _result) => {
+            Command::Create(new) => {
                 unify_variable(&mut working, new, Value::Oid(Oid(7777)));
             }
         }

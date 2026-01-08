@@ -1,6 +1,6 @@
 use protocol::Error;
 use core::convert::Infallible;
-use crate::{Task};
+use crate::{Task, Runtime};
 use alloc::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -37,11 +37,11 @@ impl Pgid {
     }
 }
 
-pub fn sys_getpid(t: Task) -> Result<usize, Infallible> {
+pub fn sys_getpid<R:Runtime>(t: Task<R>) -> Result<usize, Infallible> {
     Ok(t.process.tgid.value() as _)
 }
 
-pub fn sys_getppid(t: Task) -> Result<usize, Infallible> {
+pub fn sys_getppid<R:Runtime>(t: Task<R>) -> Result<usize, Infallible> {
     Ok(t.process
         .parent
         .lock_save_irq()
@@ -51,7 +51,7 @@ pub fn sys_getppid(t: Task) -> Result<usize, Infallible> {
         .unwrap_or(0) as _)
 }
 
-pub fn sys_getpgid(t: Task, pid: Pid) -> Result<usize, Error> {
+pub fn sys_getpgid<R:Runtime>(t: Task<R>, pid: Pid) -> Result<usize, Error> {
     let pgid = if pid == 0 {
         *t.process.pgid.lock_save_irq()
     } else if let Some(tg) = ThreadGroup::get(Tgid::from_pid_t(pid)) {
@@ -63,7 +63,7 @@ pub fn sys_getpgid(t: Task, pid: Pid) -> Result<usize, Error> {
     Ok(pgid.value() as _)
 }
 
-pub fn sys_setpgid(t: Task, pid: Pid, pgid: Pgid) -> Result<usize, Error> {
+pub fn sys_setpgid<R:Runtime>(t: Task<R>, pid: Pid, pgid: Pgid) -> Result<usize, Error> {
     if pid == 0 {
         *t.process.pgid.lock_save_irq() = pgid;
     } else if let Some(tg) = ThreadGroup::get(Tgid::from_pid_t(pid)) {

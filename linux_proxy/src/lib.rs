@@ -15,6 +15,7 @@ pub mod rsrc_lim;
 pub mod rw;
 pub mod syserr;
 pub mod task;
+pub mod runtime;
 
 pub use creds::*;
 pub use fd_table::*;
@@ -26,29 +27,14 @@ pub use rsrc_lim::*;
 pub use syserr::*;
 pub use task::*;
 pub use path::*;
+pub use runtime::*;
 
-pub type UserAddress = u64;
-use core::marker::PhantomData;
 
 #[macro_export]
 macro_rules! perr {
     ($k:expr, $($arg:tt)*) => {{
         protocol::Error{cause:alloc::format!($($arg)*), location:$k.myself, syserr: None}
     }}
-}
-
-pub struct Lock<A> {
-    d: PhantomData<A>,
-}
-
-impl<A> Lock<A> {
-    fn new(d:A) -> Lock<A>{
-        Lock{}
-    }
-    
-    fn lock(&self) -> A {
-        self.d
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]

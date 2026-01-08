@@ -1,4 +1,4 @@
-use crate::{Pid, Task};
+use crate::{Pid, Task, Runtime};
 
 use protocol::Error;
 
@@ -40,8 +40,8 @@ pub struct RLimit {
     pub rlim_max: u64, // The hard limit
 }
 
-pub async fn sys_prlimit64(
-    _t:Task,
+pub async fn sys_prlimit64<R:Runtime>(
+    _t:Task<R>,
     _pid: Pid,
     _resource: u32,
     _new_rlim: *const RLimit,
