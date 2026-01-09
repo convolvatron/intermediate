@@ -33,7 +33,7 @@ pub use runtime::*;
 #[macro_export]
 macro_rules! perr {
     ($k:expr, $($arg:tt)*) => {{
-        protocol::Error{cause:alloc::format!($($arg)*), location:$k.myself, syserr: None}
+        protocol::Error{cause:alloc::format!($($arg)*), location:Some($k.myself), syserr: None}
     }}
 }
 

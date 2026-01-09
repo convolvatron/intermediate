@@ -63,13 +63,14 @@ impl<R:Runtime> Process<R> {
     // that index `Some(entry)` is returned. Otherwise, `None` is returned.
     fn insert_at(&mut self, fd: Fd, entry: FileDescriptorEntry) -> Option<FileDescriptorEntry> {
         let fd_idx = fd.0 as usize;
+        let mut fds = self.fd_table.lock();
 
-        if fd_idx >= self.fd_table.lock().len() {
+        if fd_idx >= fds.len() {
             // We need to resize the vector to accommodate the new FD.
             self.fd_table.lock().resize_with(fd_idx + 1, || None);
         }
 
-        self.fd_table[fd_idx].replace(entry)
+        fds[fd_idx].replace(entry)
     }
 
     /// Removes a file descriptor from the table, returning the file if it
@@ -86,25 +87,20 @@ impl<R:Runtime> Process<R> {
         
     }
 
-
-    //    pub fn clone_for_exec(&self) -> Self {
-
     /// Finds the lowest-numbered available file descriptor.
     fn find_free_fd(&mut self) -> Result<Fd, Error> {
+        let fds = self.fd_table.lock();
+        let next = fds.len();        
         // Start searching from our hint.
-        for i in self.next_fd_hint..self.fd_table.len() {
-            if self.fd_table[i].is_none() {
+        for i in self.next_fd_hint..next {
+            if fds[i].is_none() {
                 self.next_fd_hint = i + 1;
                 return Ok(Fd(i as i32));
             }
         }
-
         // We didn't find a free slot in the existing capacity
-        let next = self.fd_table.len();
-
         if next >= MAX_FDS {
-            // this should be in the process context
-            Err(perr!(self.k, "too many files"))
+            Err(perr!(self, "too many files"))
         } else {
             self.next_fd_hint = next + 1;
             Ok(Fd(next as i32))

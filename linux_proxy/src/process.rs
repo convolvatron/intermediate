@@ -56,8 +56,8 @@ pub struct Process<R:Runtime> {
     // we keep the path used to traverse to this objet since its
     // not unique, valuable user context, and very costly to ennumerate
     pub cwd: R::Lock<(Oid, Path)>,
-    next_fd_hint: usize,
-    next_tid: AtomicU32,
+    pub next_fd_hint: usize,
+    pub next_tid: AtomicU32,
 }
 
 unsafe impl<R:Runtime> Send for Process<R> {}

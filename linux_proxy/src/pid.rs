@@ -1,6 +1,6 @@
 use protocol::Error;
 use core::convert::Infallible;
-use crate::{Task, Runtime, Process, linuxerr};
+use crate::{Task, Runtime, Process, linuxerr, Lockable};
 use alloc::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -13,10 +13,6 @@ impl Pid {
 
     pub fn is_idle(self) -> bool {
         self.0 == 0
-    }
-
-    pub fn from_pid_t(pid: Pid) -> Pid {
-        Self(pid as _)
     }
 }
 
@@ -38,24 +34,24 @@ impl Pgid {
 }
 
 pub fn sys_getpid<R:Runtime>(t: Task<R>) -> Result<usize, Infallible> {
-    Ok(t.process.tgid.value() as _)
+    Ok(t.process.pgid.lock().0 as usize)
 }
 
 pub fn sys_getppid<R:Runtime>(t: Task<R>) -> Result<usize, Infallible> {
     Ok(t.process
         .parent
-        .lock_save_irq()
+        .lock()
         .as_ref()
         .and_then(|x| x.upgrade())
-        .map(|x| x.tgid.value())
+        .map(|x| x.pgid.0)
         .unwrap_or(0) as _)
 }
 
 pub fn sys_getpgid<R:Runtime>(t: Task<R>, pid: Pid) -> Result<usize, Error> {
-    let pgid = if pid == 0 {
-        *t.process.pgid.lock_save_irq()
-    } else if let Some(tg) = ThreadGroup::get(Tgid::from_pid_t(pid)) {
-        *tg.pgid.lock_save_irq()
+    let pgid = if pid.0 == 0 {
+        *t.process.pgid.lock()
+    } else if let Some(tg) = Process::get(Pgid::from_pid_t(pid)) {
+        *tg.pgid.lock()
     } else {
         return Err(Error::NoProcess);
     };

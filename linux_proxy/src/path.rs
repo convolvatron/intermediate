@@ -15,9 +15,11 @@ impl Path {
         let mut end: usize = 0;
         let mut absolute = false;
         let mut elements = Vec::new();
+        let sb = s.as_bytes();
 
         while end < s.len() {
-            if s[end] == '/' {
+            // we can use as_bytes here, since '/' is a single byte
+            if sb[end] == b'/' {
                 if end == 0 {
                     absolute = true;
                     end = end + 1
@@ -31,19 +33,21 @@ impl Path {
     }
 
     pub fn to_string(&self) -> String {
-        let res = self.elements.join("/");
+        let mut res = self.elements.join("/");
         if self.absolute {
-            res = "/" + res;
+            res = "/".to_string() + &res;
         }
         res
     }
 
     pub fn join(&self, other: &Path) -> Path {
+        // we kinda .. really.. dont want other to be absolute?
         let mut ret: Path = Path {
-            elements: vec_with_capacity(self.elements.len() + other.elementslen()),
+            absolute: self.absolute,
+            elements: vec_with_capacity(self.elements.len() + other.elements.len()),
         };
-        ret.push(self);
-        ret.push(other);
+        ret.elements.extend(self.elements);
+        ret.elements.extend(other.elements);
         ret
     }
 }

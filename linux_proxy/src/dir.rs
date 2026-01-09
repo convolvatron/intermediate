@@ -70,7 +70,7 @@ fn write_dirent(dirent: DynEntity, dest: Buffer) -> Result<usize, Error> {
 
     // le should be parameterizable, but i guess that battle was lost 30 years ago
     get_u64(dirent, attribute!("inode"))?.to_le_bytes();
-    dest[header_len..name.len()].copy_from_slice(name);
+    dest.write(&name.into_bytes());
     Ok(padded_reclen)
 }
 

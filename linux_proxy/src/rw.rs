@@ -37,7 +37,7 @@ pub async fn sys_read<R:Runtime>(t:Task<R>, fd: Fd, user_buf: AddressSpace, coun
                 file.pos),
             Address::Offset(
                 Box::new(Address::Entity(t.process.myself, attribute!("vma"))),
-                user_buf as u64),
+                addr as u64),
             count,
             0,
         ));
