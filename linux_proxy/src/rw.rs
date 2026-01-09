@@ -1,6 +1,6 @@
-use alloc::{boxed::Box, string::ToString, vec};
-use crate::{Fd, AddressSpace, Task, Runtime};
-use protocol::{Address, Attribute, Buffer, Command, attribute, Error, Value};
+use alloc::{boxed::Box, vec, vec::Vec};
+use crate::{Fd, AddressSpace, Task, Runtime, linuxerr};
+use protocol::{Address, Attribute, Command, attribute, Error};
 
 // partial writes?
 // update pos
@@ -8,19 +8,18 @@ use protocol::{Address, Attribute, Buffer, Command, attribute, Error, Value};
 pub async fn sys_write<R:Runtime>(t: Task<R>, fd: Fd, user_buf: AddressSpace, count: usize) -> Result<usize, Error> {
     let file = t.process.get_fd(fd)?;
     if let AddressSpace::User(addr) = user_buf {
-        let program = vec!(Command::copy(
+        let program = vec!(Command::Copy(
             Address::Offset(
-                Box::new(Address::Entity(t.process.myself, attribute!("vma")), addr)
-            ),
-            
+                Box::new(Address::Entity(t.process.myself, attribute!("vma"))),
+                addr),
             Address::Offset(
                 Box::new(Address::Entity(file.obj, attribute!("contents"))),
                 file.pos,
             ),
             count,
-            Value::Variable(0),
+            0
         ));
-        t.process.kernel.execute(program);
+        t.process.kernel.runtime.execute(program);
     }
 
     Ok(count)
@@ -30,18 +29,22 @@ pub async fn sys_read<R:Runtime>(t:Task<R>, fd: Fd, user_buf: AddressSpace, coun
     let file = t.process.get_fd(fd)?;
 
     // translate user_buf to 'physical'
-    let mut b = Buffer::new();
-    Command::copy(
-        &mut b,
-        Address::Offset(
-            Box::new(Address::Entity(file.obj, attribute!("contents"))),
-            file.pos,
-        ),
-        Address::Entity(t.process.myself, attribute!("vma")),
-        count,
-        0,
-    );
-    // update pos
-    // partial reads?
-    Ok(count)
+    let mut block = Vec::new();
+    if let AddressSpace::User(addr) = user_buf {
+        block.push(Command::Copy(
+            Address::Offset(
+                Box::new(Address::Entity(file.obj, attribute!("contents"))),
+                file.pos),
+            Address::Offset(
+                Box::new(Address::Entity(t.process.myself, attribute!("vma"))),
+                user_buf as u64),
+            count,
+            0,
+        ));
+        // update pos
+        // partial reads?
+        Ok(count)
+    } else {
+        Err(linuxerr!(EFAULT))
+    }
 }

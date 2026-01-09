@@ -64,25 +64,26 @@ impl<R:Runtime> Process<R> {
     fn insert_at(&mut self, fd: Fd, entry: FileDescriptorEntry) -> Option<FileDescriptorEntry> {
         let fd_idx = fd.0 as usize;
 
-        if fd_idx >= self.entries.len() {
+        if fd_idx >= self.fd_table.lock().len() {
             // We need to resize the vector to accommodate the new FD.
-            self.entries.resize_with(fd_idx + 1, || None);
+            self.fd_table.resize_with(fd_idx + 1, || None);
         }
 
-        self.entries[fd_idx].replace(entry)
+        self.fd_table[fd_idx].replace(entry)
     }
 
     /// Removes a file descriptor from the table, returning the file if it
     /// existed.
     pub fn remove_fd(&mut self, fd: Fd) {
         let fd_idx = fd.0 as usize;
-
-        if let Some(entry) = self.entries.get_mut(fd_idx)
+        
+        if let Some(entry) = self.fd_table.lock().get(fd_idx)
             && let Some(old_entry) = entry.take()
         {
             // Update the hint to speed up the next search.
             self.next_fd_hint = self.next_fd_hint.min(fd_idx);
         }
+        
     }
 
 
@@ -91,8 +92,8 @@ impl<R:Runtime> Process<R> {
     /// Finds the lowest-numbered available file descriptor.
     fn find_free_fd(&mut self) -> Result<Fd, Error> {
         // Start searching from our hint.
-        for i in self.next_fd_hint..self.entries.len() {
-            if self.entries[i].is_none() {
+        for i in self.next_fd_hint..self.fd_table.len() {
+            if self.fd_table[i].is_none() {
                 self.next_fd_hint = i + 1;
                 return Ok(Fd(i as i32));
             }

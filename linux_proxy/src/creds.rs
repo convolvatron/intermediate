@@ -50,33 +50,28 @@ impl Credentials {
     }
 }
 
-pub fn sys_getuid() -> core::result::Result<usize, Infallible> {
-    let uid: u32 = current_task().creds.lock_save_irq().uid().into();
-
+pub fn sys_getuid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallible> {
+    let uid: u32 = t.process.creds.lock().uid().into();
     Ok(uid as _)
 }
 
-pub fn sys_geteuid() -> core::result::Result<usize, Infallible> {
-    let uid: u32 = current_task().creds.lock_save_irq().euid().into();
-
+pub fn sys_geteuid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallible> {
+    let uid: u32 = t.process.creds.lock().euid().into();
     Ok(uid as _)
 }
 
-pub fn sys_getgid() -> core::result::Result<usize, Infallible> {
-    let gid: u32 = current_task().creds.lock_save_irq().gid().into();
-
+pub fn sys_getgid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallible> {
+    let gid: u32 = t.process.creds.lock().gid().into();
     Ok(gid as _)
 }
 
-pub fn sys_getegid() -> core::result::Result<usize, Infallible> {
-    let gid: u32 = current_task().creds.lock_save_irq().egid().into();
-
+pub fn sys_getegid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallible> {
+    let gid: u32 = t.process.creds.lock().egid().into();
     Ok(gid as _)
 }
 
-pub fn sys_gettid() -> core::result::Result<usize, Infallible> {
-    let tid: u32 = current_task().tid.0;
-
+pub fn sys_gettid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallible> {
+    let tid: u32 = t.tid.0;
     Ok(tid as _)
 }
 

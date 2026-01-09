@@ -1,6 +1,6 @@
 use crate::{
     Runtime,
-    Credentials, Kernel, linuxerr,
+    Credentials, Kernel, linuxerr, Lockable,
     FileDescriptorEntry,
     Fd,
     Pid,
@@ -77,13 +77,12 @@ impl<R:Runtime> Process<R> {
     }
     
     pub fn get_fd(&self, fd: Fd) -> Result<FileDescriptorEntry, Error> {
-        Ok(self.fd_Table.get(fd.0 as usize))
+        Ok(self.fd_table.lock().get(fd.0 as usize))
     }
 }
 
 impl<R:Runtime> Drop for Process<R> {
     fn drop(&mut self) {
-        self.kernel.TG_LIST.lock()
     }
 }
 

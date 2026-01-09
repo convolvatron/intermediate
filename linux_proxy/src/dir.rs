@@ -56,7 +56,7 @@ fn pad(x: usize, to: usize) -> usize {
 }
 
 fn write_dirent(dirent: DynEntity, dest: Buffer) -> Result<usize, Error> {
-    let name = get_string(dirent, "name");
+    let name = get_string(dirent, attribute!("name"))?;
     let header_len = core::mem::size_of::<Dirent64Hdr>();
 
     // Userspace expects dirents to always be 8-byte aligned.
@@ -70,8 +70,8 @@ fn write_dirent(dirent: DynEntity, dest: Buffer) -> Result<usize, Error> {
     }
 
     // le should be parameterizable, but i guess that battle was lost 30 years ago
-    get_u64(dirent, "inode")?.to_le_bytes();
-    dest[header_len..name.lne()].copy_from_slice(name);
+    get_u64(dirent, attribute!("inode"))?.to_le_bytes();
+    dest[header_len..name.len()].copy_from_slice(name);
     Ok(padded_reclen)
 }
 

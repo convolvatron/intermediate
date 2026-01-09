@@ -1,6 +1,6 @@
 use protocol::Error;
 use core::convert::Infallible;
-use crate::{Task, Runtime};
+use crate::{Task, Runtime, Process, linuxerr};
 use alloc::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -66,10 +66,10 @@ pub fn sys_getpgid<R:Runtime>(t: Task<R>, pid: Pid) -> Result<usize, Error> {
 pub fn sys_setpgid<R:Runtime>(t: Task<R>, pid: Pid, pgid: Pgid) -> Result<usize, Error> {
     if pid == 0 {
         *t.process.pgid.lock_save_irq() = pgid;
-    } else if let Some(tg) = ThreadGroup::get(Tgid::from_pid_t(pid)) {
+    } else if let Some(tg) = Process::get(Tgid::from_pid_t(pid)) {
         *tg.pgid.lock_save_irq() = pgid;
     } else {
-        return Err(Error::NoProcess);
+        return Err(linuxerr!(ESRCH));
     };
 
     Ok(0)

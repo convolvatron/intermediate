@@ -6,7 +6,8 @@ use core::sync::atomic::Ordering;
 // globals from moss-kernel in someplace that isn't so global
 
 pub struct Kernel<R:Runtime> {
-    runtime: R,
+    pub runtime: R,
+    processes: Vec<Arc<Process<R>>,
     pid_count: core::sync::atomic::AtomicU64,
 }
 
@@ -14,13 +15,13 @@ impl<R:Runtime> Kernel<R> {
     // might just do these lookups in eav space rather than implement
     // it as DynEntity here
     pub fn get_process(&self, id: Pid) -> Option<Arc<Process<R>>> {
-        None
+        self.processes().get(id)
     }
     pub fn next_pid(&self) -> Pid {
         Pid(self.kernel.pid_count, fetch_add(1, Ordering::SeqCst))
     }
 
     pub fn new(runtime:R) -> Kernel<R>{
-        Kernel{runtime, pid_count:1}
+        Kernel{runtime, pid_count1:core::sync::atomic::AtomicU64::new(1)}
     }
 }

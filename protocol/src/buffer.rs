@@ -16,6 +16,10 @@ impl Buffer {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.write - self.read
+    }
+    
     pub fn read(&mut self, count: usize) -> Result<&[u8], Error> {
         let start = self.read;
         self.read = self.read + count;
