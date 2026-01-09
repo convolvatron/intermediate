@@ -50,7 +50,7 @@ pub struct Process<R:Runtime> {
     pub parent: R::Lock<Option<Weak<Process<R>>>>,
     pub children: R::Lock<BTreeMap<Pid, Arc<Process<R>>>>,
     pub threads: R::Lock<BTreeMap<Tid, Weak<Task<R>>>>,
-    pub fd_table: R::Lock<Vec<FileDescriptorEntry>>,
+    pub fd_table: R::Lock<Vec<Option<FileDescriptorEntry>>>,
     pub robust_list: R::Lock<Option<*mut RobustListHead>>,
     pub creds: R::Lock<Credentials>,
     // we keep the path used to traverse to this objet since its

@@ -1,4 +1,4 @@
-use crate::{OpenFlags, perr, Process, Runtime};
+use crate::{OpenFlags, perr, Process, Runtime, runtime::Lockable};
 use protocol::{Error, Oid};
 
 #[repr(C)]
@@ -66,7 +66,7 @@ impl<R:Runtime> Process<R> {
 
         if fd_idx >= self.fd_table.lock().len() {
             // We need to resize the vector to accommodate the new FD.
-            self.fd_table.resize_with(fd_idx + 1, || None);
+            self.fd_table.lock().resize_with(fd_idx + 1, || None);
         }
 
         self.fd_table[fd_idx].replace(entry)

@@ -10,9 +10,9 @@ pub trait Syscall {
 
 pub trait Lockable<A> {
     type Lock<C>;
-    type Guard<'a, B> : Deref + DerefMut where Self: 'a;
+    type Guard<'a, B:'a> : Deref<Target = &'a B> + DerefMut<Target = &'a mut B> where Self: 'a;
     fn new(item:A) -> Self::Lock<A>;
-    fn lock(&mut self) -> Self::Guard<'_, &A>;
+    fn lock(&self) ->  Self::Guard<'_, A>;
 }
 
 pub trait Runnable {
@@ -25,7 +25,7 @@ pub enum AddressSpace {
 }
 
 pub trait Runtime {
-    type Lock<A>:Lockable<A> + Deref + DerefMut;
+    type Lock<A>:Lockable<A>;
 
     type Thread:Runnable;
 

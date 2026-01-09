@@ -50,7 +50,7 @@ impl Credentials {
     }
 }
 
-pub fn sys_getuid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallible> {
+pub fn sys_getuid<R:Runtime>(mut t: Task<R>) -> core::result::Result<usize, Infallible> {
     let uid: u32 = t.process.creds.lock().uid().into();
     Ok(uid as _)
 }
@@ -76,7 +76,7 @@ pub fn sys_gettid<R:Runtime>(t:Task<R>) -> core::result::Result<usize, Infallibl
 }
 
 pub async fn sys_getresuid<R:Runtime>(
-    t:Task<R>,
+    t: Task<R>,
     ruid: *mut Uid,
     euid: *mut Uid,
     suid: *mut Uid,
