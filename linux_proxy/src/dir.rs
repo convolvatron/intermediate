@@ -1,5 +1,4 @@
-use crate::{Fd, FileType, AddressSpace, linuxerr, Task, Runtime, Lockable,
-};
+use crate::{Fd, FileType, AddressSpace, linuxerr, Task, Runtime};
 use protocol::{Buffer,
                DynEntity,
                Error,
@@ -76,12 +75,7 @@ fn write_dirent(dirent: DynEntity, dest: Buffer) -> Result<usize, Error> {
 }
 
 pub async fn sys_getdents64<R:Runtime>(t: Task<R>, fd: Fd, mut ubuf: AddressSpace, size: u32) -> Result<usize, Error> {
-    let file = t
-        .process
-        .fd_table
-        .lock()
-        .get(fd.0 as usize)
-        .ok_or(linuxerr!(EBADF))?;
+    let file = t.process.get_fd(fd)?;
     let b = Buffer::new();
     let st = get_stream(file.obj, attribute!("children"));
     while let Some(t) = st.next() {

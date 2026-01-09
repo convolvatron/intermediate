@@ -8,14 +8,16 @@ pub trait Syscall {
     fn on_syscall(&self, num:u32, args:[u64;6]);
 }
 
+pub trait Lockable<A> {
+    type Lock<C>;
+    type Guard<'a, B> : Deref + DerefMut where Self: 'a;
+    fn new(item:A) -> Self::Lock<A>;
+    fn lock(&mut self) -> Self::Guard<'_, &A>;
+}
+
 pub trait Runnable {
     fn run(&self) -> !; // this will have to change once we support multiple contexts
 }
-
-pub trait Lockable<A> {
-    fn lock(&self) -> A;
-}
-
 pub enum AddressSpace {
     User(u64),
     Kernel(u64),
@@ -24,6 +26,7 @@ pub enum AddressSpace {
 
 pub trait Runtime {
     type Lock<A>:Lockable<A> + Deref + DerefMut;
+
     type Thread:Runnable;
 
     fn create_thread(&self, entry:u64, arg:u64, syscalls:DynSyscall) -> Result<Self::Thread, Error>;

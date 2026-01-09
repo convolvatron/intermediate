@@ -1,5 +1,5 @@
 use crate::{Pid, Process, Runtime};
-use alloc::{sync::Arc};
+use alloc::{sync::Arc, vec::Vec};
 use core::sync::atomic::Ordering;
 
 // this is a logical kernel instance, really just a place to stash all the
@@ -7,7 +7,7 @@ use core::sync::atomic::Ordering;
 
 pub struct Kernel<R:Runtime> {
     pub runtime: R,
-    processes: Vec<Arc<Process<R>>,
+    processes: Vec<Arc<Process<R>>>,
     pid_count: core::sync::atomic::AtomicU64,
 }
 
