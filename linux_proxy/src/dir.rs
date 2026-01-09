@@ -54,7 +54,7 @@ fn pad(x: usize, to: usize) -> usize {
     (((x - 1) / to) + 1) * to
 }
 
-fn write_dirent(dirent: DynEntity, dest: Buffer) -> Result<usize, Error> {
+fn write_dirent(dirent: DynEntity, mut dest:Buffer) -> Result<usize, Error> {
     let name = get_string(dirent, attribute!("name"))?;
     let header_len = core::mem::size_of::<Dirent64Hdr>();
 

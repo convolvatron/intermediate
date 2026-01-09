@@ -47,7 +47,7 @@ pub struct Process<R:Runtime> {
     pub sid: R::Lock<Sid>,
     pub state: R::Lock<ProcessState>,
     pub umask: R::Lock<u32>,
-    pub parent: R::Lock<Option<Weak<Process<R>>>>,
+    pub parent: R::Lock<Pid>,
     pub children: R::Lock<BTreeMap<Pid, Arc<Process<R>>>>,
     pub threads: R::Lock<BTreeMap<Tid, Weak<Task<R>>>>,
     pub fd_table: R::Lock<Vec<Option<FileDescriptorEntry>>>,

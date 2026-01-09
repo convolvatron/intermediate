@@ -83,9 +83,11 @@ pub async fn sys_getresuid<R:Runtime>(
 ) -> Result<usize, Error> {
     let creds = t.process.creds.lock().clone();
 
-    *ruid = creds.uid;
-    *euid = creds.euid;
-    *suid = creds.suid;        
+    unsafe {
+        *ruid = creds.uid;
+        *euid = creds.euid;
+        *suid = creds.suid;
+    }
     
     Ok(0)
 }

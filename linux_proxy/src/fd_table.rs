@@ -73,18 +73,16 @@ impl<R:Runtime> Process<R> {
         fds[fd_idx].replace(entry)
     }
 
-    /// Removes a file descriptor from the table, returning the file if it
-    /// existed.
+    /// Removes a file descriptor from the table, not - returning the file if it
+    /// existed. do we..need to?
     pub fn remove_fd(&mut self, fd: Fd) {
         let fd_idx = fd.0 as usize;
-        
-        if let Some(entry) = self.fd_table.lock().get(fd_idx)
-            && let Some(old_entry) = entry.take()
-        {
+        let fds = self.fd_table.lock();
+        if let Some(_entry) = fds.get(fd_idx) {
             // Update the hint to speed up the next search.
             self.next_fd_hint = self.next_fd_hint.min(fd_idx);
         }
-        
+        fds[fd_idx] = None;
     }
 
     /// Finds the lowest-numbered available file descriptor.
