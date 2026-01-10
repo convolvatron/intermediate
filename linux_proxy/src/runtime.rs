@@ -18,25 +18,35 @@ pub trait Lockable<A> {
 pub trait Runnable {
     fn run(&self) -> !; // this will have to change once we support multiple contexts
 }
+
+// AddressSpace looks alot like protocol::Address?
 pub enum AddressSpace {
     User(u64),
     Kernel(u64),
     Physical(u64),
 }
 
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy)]
+    pub struct AccessMode: i32 {
+        /// Execution is permitted
+        const X_OK = 1;
+        /// Writing is permitted
+        const W_OK = 2;
+        /// Reading is permitted
+        const R_OK = 4;
+    }
+}
+
+
 pub trait Runtime {
     type Lock<A>:Lockable<A>;
-
     type Thread:Runnable;
 
     fn create_thread(&self, entry:u64, arg:u64, syscalls:DynSyscall) -> Result<Self::Thread, Error>;
-    fn create_lock<A>(&self) -> Self::Lock<A>;
     fn console(&self, s:String);
-
-    // permissions..think about address spaces a little more
-    // return a mapping with an unmap?
-    fn map(&self, from:AddressSpace, to:AddressSpace, length:usize);
-    fn unmap(&self, at:AddressSpace, length:usize);
+    fn map(&self, from:AddressSpace, to:AddressSpace, a:AccessMode, length:usize) -> Result<(), Error>;
+    fn unmap(&self, at:AddressSpace, length:usize) -> Result<(), Error>;
     fn copy(&self, to:AddressSpace, from:AddressSpace, length:usize);
     fn execute(&self, block:Vec<Command>) -> Result<Vec<Value>, Error>;
 }

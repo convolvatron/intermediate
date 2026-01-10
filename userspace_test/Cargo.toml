@@ -1,0 +1,8 @@
+[package]
+name = "userspace_test"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol = {path = "../protocol"}
+linux-proxy = {path = "../linux_proxy"}

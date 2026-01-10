@@ -43,21 +43,21 @@ pub fn sys_getppid<R:Runtime>(t: Task<R>) -> Result<usize, Infallible> {
 
 pub fn sys_getpgid<R:Runtime>(t: Task<R>, pid: Pid) -> Result<usize, Error> {
     let pgid = if pid.0 == 0 {
-        t.process.pgid.lock()
+        t.process.pgid.lock().0
     } else if let Some(tg) = t.process.kernel.get_process(pid) {
-        tg.pgid.lock()
+        tg.pgid.lock().0
     } else {
         return Err(linuxerr!(ESRCH))
     };
 
-    Ok(pgid.0 as _)
+    Ok(pgid as _)
 }
 
 pub fn sys_setpgid<R:Runtime>(t: Task<R>, pid: Pid, pgid: Pgid) -> Result<usize, Error> {
     if pid.0 == 0 {
-        *t.process.pgid.lock() = &mut pgid;
-    } else if let Some(tg) = t.process.kernel.get_Process(Pgid::from_pid_t(pid)) {
-        *tg.pgid.lock() = pgid;
+        **t.process.pgid.lock() = pgid;
+    } else if let Some(p) = t.process.kernel.get_process(pid) {
+        **p.pgid.lock() = pgid;
     } else {
         return Err(linuxerr!(ESRCH));
     };

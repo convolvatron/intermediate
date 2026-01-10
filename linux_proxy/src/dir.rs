@@ -55,7 +55,7 @@ fn pad(x: usize, to: usize) -> usize {
 }
 
 fn write_dirent(dirent: DynEntity, mut dest:Buffer) -> Result<usize, Error> {
-    let name = get_string(dirent, attribute!("name"))?;
+    let name = get_string(dirent.clone(), attribute!("name"))?;
     let header_len = core::mem::size_of::<Dirent64Hdr>();
 
     // Userspace expects dirents to always be 8-byte aligned.

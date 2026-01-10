@@ -1,20 +1,9 @@
-use crate::{FileType, Gid, Uid, linuxerr};
+use crate::{FileType, Gid, Uid, linuxerr, AccessMode};
 use protocol::Error;
 
 use bitflags::bitflags;
 use core::time::Duration;
 
-bitflags::bitflags! {
-    #[derive(Debug, Clone, Copy)]
-    pub struct AccessMode: i32 {
-        /// Execution is permitted
-        const X_OK = 1;
-        /// Writing is permitted
-        const W_OK = 2;
-        /// Reading is permitted
-        const R_OK = 4;
-    }
-}
 
 bitflags! {
     #[derive(Clone, Copy, Debug)]

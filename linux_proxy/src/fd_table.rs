@@ -77,7 +77,7 @@ impl<R:Runtime> Process<R> {
     /// existed. do we..need to?
     pub fn remove_fd(&mut self, fd: Fd) {
         let fd_idx = fd.0 as usize;
-        let fds = self.fd_table.lock();
+        let mut fds = self.fd_table.lock();
         if let Some(_entry) = fds.get(fd_idx) {
             // Update the hint to speed up the next search.
             self.next_fd_hint = self.next_fd_hint.min(fd_idx);

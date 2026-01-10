@@ -44,10 +44,10 @@ impl Path {
         // we kinda .. really.. dont want other to be absolute?
         let mut ret: Path = Path {
             absolute: self.absolute,
-            elements: vec_with_capacity(self.elements.len() + other.elements.len()),
+            elements: Vec::with_capacity(self.elements.len() + other.elements.len()),
         };
-        ret.elements.extend(self.elements);
-        ret.elements.extend(other.elements);
+        ret.elements.extend(self.elements.clone());
+        ret.elements.extend(other.elements.clone());
         ret
     }
 }

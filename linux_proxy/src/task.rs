@@ -1,5 +1,5 @@
 use crate::{
-    Pid, Process, Runtime,
+    Pid, Process, Runtime, Lockable,
 };
 
 use alloc::{sync::Arc};
@@ -11,11 +11,11 @@ pub struct Task<R:Runtime> {
 }
 
 impl<R:Runtime> Task<R> {
-    pub fn new(p: Process<R>) -> Self {
+    pub fn new(p: Arc<Process<R>>) -> Self {
         Self {
             tid: Tid(1),
             process: p,
-            state: Arc::new(Lock::new(TaskState::Runnable)),
+            state: Arc::new(R::Lock::new(TaskState::Runnable)),
         }
     }
 

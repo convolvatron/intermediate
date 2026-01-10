@@ -77,7 +77,11 @@ impl<R:Runtime> Process<R> {
     }
     
     pub fn get_fd(&self, fd: Fd) -> Result<FileDescriptorEntry, Error> {
-        Ok(self.fd_table.lock().get(fd.0 as usize))
+        if let Some(Some(fde)) = self.fd_table.lock().get(fd.0 as usize) {
+            Ok(fde.clone())
+        } else {
+            Err(linuxerr!(EBADF))
+        }
     }
 }
 
