@@ -1,5 +1,5 @@
-use crate::Oid;
-use alloc::string::String;
+use crate::{Oid, DynEntityHandler, Memory};
+use alloc::{string::String, sync::Arc};
 
 // maybe this should be dynentity 
 #[derive(Debug)]
@@ -10,6 +10,14 @@ pub struct Error {
     pub cause: String,
     pub syserr: Option<u8>,
     // file and line can we do?
+}
+
+impl Error {
+    fn to_object() -> DynEntityHandler {
+        // its odd, that this has an oid, but we kinda need one
+        let out = Arc::new(Memory::new());
+        out
+    }
 }
 
 #[macro_export]

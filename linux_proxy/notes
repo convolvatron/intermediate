@@ -1,1 +1,35 @@
 remember to tell them that the security envelope doesn't include the kernel, its untrusted...since there are by no shared resouces here
+
+ok, i think we can clean up the fault management from moss by having a context which
+has a syscall handler and a memfault handler as dyns. the memfault handler can actually
+be a btree of memfault handlers with a fallback that just segvs
+
+trying todelay the urge to write a macro that would:
+   replace variables in queries with rust variables, and use the colon
+   notation to be build the stream deconstructor, include the while Some(v) = stream.next()
+   and we have a typesafe iterateing query block thats pretty readable
+
+  something like this:
+ pub async fn sys_getdents64<R:Runtime>(t: Task<R>, fd: Fd, mut ubuf: AddressSpace, size: u32) -> Result<usize, Error> {
+     let file = t.process.get_fd(fd)?;
+     if let User(addr) =  ubuf {
+         let b = Buffer::new(addr);
+         let st = execute!(t.process,
+                          [get(file.obj, children, oid:Oid)),
+                           get(oid, name:String, file:Oid),
+                           get(oid, attribute!("children"), child_children:Set<Oid>]{
+             let header_len = core::mem::size_of::<Dirent64Hdr>();
+             let reclen : u16 = header_len + name.len() + 1;
+             write!(dest, &oid.to_le_64());
+             write!(dest, &(pad(reclen as u64, 8).to_le_u64()));
+             write!(dest, &reclen.to_le_64());
+             write!(dest, if child_children.len() > 0 {
+                    &[DirentFileType::Dir as u8]
+                 } else {
+                    &DirentFileType::Reg as u8]
+                 });
+             write!(dest, &name.into_bytes());
+        });
+        Ok(b.len())
+      }
+      Err(linuxerr!(EFAULT))

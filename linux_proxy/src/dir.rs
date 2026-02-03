@@ -1,11 +1,11 @@
+use alloc::{vec};
 use crate::{Fd, FileType, AddressSpace, linuxerr, Task, Runtime};
 use protocol::{Buffer,
-               DynEntity,
+               Command,
+               Value,
                Error,
                Attribute,
-               attribute,
-               get_string,
-               get_u64};
+               attribute};
 
 // merge with file type
 #[repr(u8)]
@@ -54,33 +54,52 @@ fn pad(x: usize, to: usize) -> usize {
     (((x - 1) / to) + 1) * to
 }
 
-fn write_dirent(dirent: DynEntity, mut dest:Buffer) -> Result<usize, Error> {
-    let name = get_string(dirent.clone(), attribute!("name"))?;
-    let header_len = core::mem::size_of::<Dirent64Hdr>();
-
-    // Userspace expects dirents to always be 8-byte aligned.
-    // are we not allowed to cheat on the last entry?
-    let padded_reclen = pad(header_len + name.len() + 1, 8);
-
-    // If the full, padded entry doesn't fit, stop here for this syscall.
-    if padded_reclen > dest.len() {
-        // isn't this nonmem..nope, someone decided it was the catchall
-        return Err(linuxerr!(EINVAL));
+macro_rules! write {
+    ($dest:expr, $source:expr) => {
+        $dest.write($source).map_err(|_| linuxerr!(EINVAL))
     }
-
-    // le should be parameterizable, but i guess that battle was lost 30 years ago
-    get_u64(dirent, attribute!("inode"))?.to_le_bytes();
-    dest.write(&name.into_bytes());
-    Ok(padded_reclen)
 }
+
+macro_rules! var {
+    ($num:expr) => {
+        Value::Variable($num)
+    }
+}
+
+macro_rules! union {
+    ($num:expr) => {
+        Value::Union($num)
+    }
+}
+
+// i would like to check if it has a contents, but not
+// to pull the whole thing. we also need to demux special files and links
 
 pub async fn sys_getdents64<R:Runtime>(t: Task<R>, fd: Fd, mut ubuf: AddressSpace, size: u32) -> Result<usize, Error> {
     let file = t.process.get_fd(fd)?;
     let b = Buffer::new();
-    let st = get_stream(file.obj, attribute!("children"));
-    while let Some(t) = st.next() {
-        write_dirent(t, b);
-    }
+    let st = t.process.kernel.runtime.execute(
+        vec!(Command::Get(file.obj, attribute!("children"), var!(0), union!(4)),
+             Command::Get(var!(0), var!(1), var!(2), union!(4)),
+             Command::Get(var!(2), attribute!("children"), union!(3), union!(4))))?;
 
-    Ok(0)
+    while let Some(v) = st.next() {
+        if let Value::String(name) = v[1] && 
+            let Value::Oid(oid) = v[2] &&
+            let Value::Set(children) = v[3] {
+                let header_len = core::mem::size_of::<Dirent64Hdr>();
+                let reclen : u16 = header_len + name.len() + 1;
+                write!(b, &oid.to_le_64())?;
+                write!(b, &(pad(reclen as u64, 8).to_le_u64()))?;
+                write!(b, &reclen.to_le_64())?;
+                let kind = if children.len() > 0 {
+                    &[DirentFileType::Dir as u8]
+                } else {
+                    &[DirentFileType::Reg as u8]
+                };
+                write!(b, kind)?;
+                write!(b, &name.into_bytes())?;
+            }
+    }
+    Ok(b.len())
 }

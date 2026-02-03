@@ -1,5 +1,5 @@
 use alloc::{sync::Arc, string::String, vec::Vec};
-use protocol::{Error, Command, Value};
+use protocol::{Error, Command, Value, DynStream};
 use core::ops::{Deref, DerefMut};
 
 
@@ -48,5 +48,5 @@ pub trait Runtime {
     fn map(&self, from:AddressSpace, to:AddressSpace, a:AccessMode, length:usize) -> Result<(), Error>;
     fn unmap(&self, at:AddressSpace, length:usize) -> Result<(), Error>;
     fn copy(&self, to:AddressSpace, from:AddressSpace, length:usize);
-    fn execute(&self, block:Vec<Command>) -> Result<Vec<Value>, Error>;
+    fn execute(&self, block:Vec<Command>) -> Result<DynStream<Vec<Value>>, Error>;
 }

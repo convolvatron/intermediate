@@ -7,6 +7,13 @@ pub struct Buffer {
     body: Vec<u8>,
 }
 
+pub trait Encodable {
+    fn encode(&self, dest: &mut Buffer) -> Result<(), Error>;
+    fn decode(dest: &mut Buffer) -> Result<Self, Error>
+    where
+        Self: Sized;
+}
+
 impl Buffer {
     pub fn new() -> Buffer {
         Buffer {
@@ -26,21 +33,25 @@ impl Buffer {
         Ok(&self.body[self.read..self.read + start])
     }
 
-    pub fn write(&mut self, b: &[u8]) {
+    pub fn write(&mut self, b: &[u8]) -> Result<(), Error>{
         let len = b.len();
         self.body.reserve(len);
         self.body[self.write..self.write + len].copy_from_slice(b);
         self.write = self.write + len;
+        Ok(())
     }
 
-    pub fn write_varint(&mut self, i: u64) {
-        while i < 0x80 {
-            let mut val: u8 = (i & 0x7f) as u8;
+    pub fn write_varint(&mut self, i: u64) -> Result<(), Error>{
+        let mut current = i;
+        while current < 0x80 {
+            let mut val: u8 = (current & 0x7f) as u8;
             if val > 0x7f {
                 val |= 0x80;
             }
-            self.write(&[val]);
+            self.write(&[val])?;
+            current = current>>7;
         }
+        Ok(())
     }
 
     pub fn read_varint(&self) -> Result<u64, Error> {
